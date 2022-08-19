@@ -96,7 +96,7 @@ module.exports = {
                     config.guilds[guild.id] = {}
                 if (!config.guilds[guild.id].news)
                     config.guilds[guild.id].news = {}
-                config.guilds[guild.id].news.Ping = {id: role.id, name: role.name};
+                config.guilds[guild.id].news.Ping = role.id;
                 saveConfig(config);
                 return interaction.reply({content: 'Ping set!', ephemeral: true});
             }

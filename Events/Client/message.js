@@ -13,7 +13,7 @@ module.exports = {
             if (message.author.bot) return;
 
 
-            const matches = message.content.matchAll(/https:\/\/discord\.com\/channels\/\d{18}\/(\d{16,20})\/(\d{16,20})/gm);
+            const matches = message.content.matchAll(/https:\/\/discord\.com\/channels\/\d{15,21}\/(\d{15,21})\/(\d{15,21})/gm);
 
             const targets = [];
             for (const match of matches) {
@@ -47,7 +47,7 @@ module.exports = {
                                     ],
                                     "author": {
                                         "name": `${messageRef.author.username}#${messageRef.author.discriminator}`,
-                                        "icon_url": `${messageRef.author.avatarURL()}`
+                                        "icon_url": `${messageRef.author.displayAvatarURL()}`
                                     },
                                     "footer": {
                                         "text": `ID: ${messageRef.id} | ${messageRef.createdAt.toLocaleString()}`
