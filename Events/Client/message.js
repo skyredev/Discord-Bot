@@ -61,7 +61,6 @@ module.exports = {
 
                     }
                 }
-                await message.delete();
             }
         }
         catch (e){

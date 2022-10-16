@@ -12,6 +12,7 @@ function getConfig() {
     return configState
 }
 
+
 module.exports = {
     saveConfig,
     getConfig
