@@ -8,7 +8,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('roles')
         .setDescription('Select your game server role!')
-        .setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     ,
 
     /**
@@ -67,7 +67,7 @@ module.exports = {
                     "color": 0x6fff00
                 }
             ]
-        , ephemeral: true});
+        , ephemeral: false});
 
     },
 

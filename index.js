@@ -28,4 +28,4 @@ client
     .catch(console.error);
 
 
-setInterval( checkPatreon, 1000*60, client);
+setInterval( checkPatreon, 5000*60, client);
