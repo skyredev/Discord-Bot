@@ -63,7 +63,7 @@ module.exports = {
                 {
                     "type": "rich",
                     "title": `Roles Selector`,
-                    "description": `Click on the button to get or remove the role of the server you are playing on!`,
+                    "description": `Click on the button to get or remove the role of the Region you are playing on!`,
                     "color": 0x6fff00
                 }
             ]
