@@ -1,5 +1,5 @@
 const {Client} = require('discord.js');
-const {saveConfig, getConfig} = require("../../Services/configService");
+const {createGuild} = require('../../Services/dataBaseServices')
 
 module.exports = {
     name: 'guildCreate',
@@ -9,9 +9,6 @@ module.exports = {
      * @param { Guild } guild
      */
     async execute(guild) {
-        const config = getConfig();
-        config.guilds[guild.id] = {}
-        saveConfig(config);
-
+        await createGuild(guild);
     }
 }

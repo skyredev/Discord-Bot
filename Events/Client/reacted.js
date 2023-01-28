@@ -22,10 +22,10 @@ module.exports = {
 
 
         try {
-            if(reaction.emoji.name=== '🔄' && reaction.message.author.id === reaction.client.user.id && reaction.message.content==='' && reaction.message.embeds[0].footer.text.startsWith('ID: ') && reaction.count>1){
+          if(reaction.emoji.name=== '🔄' && reaction.message.author.id === reaction.client.user.id && reaction.message.content==='' && reaction.message.embeds[0].footer.text.startsWith('ID: ') && reaction.count>1){  // If the reaction is a refresh button for link catched message it will refresh the message
                 let getRefLink= reaction.message.embeds[0].fields.find(f => f.name === "\u200B").value.match(/\[Jump to message!\]\((.*)\)/)[1]
 
-                const match = (/https:\/\/discord\.com\/channels\/\d{18}\/(\d{16,20})\/(\d{16,20})/gm).exec(getRefLink)
+                const match = (/https:\/\/discord\.com\/channels\/\d{15,21}\/(\d{15,21})\/(\d{15,21})/gm).exec(getRefLink)
 
                 let target = null;
                 let timeStamp = null;

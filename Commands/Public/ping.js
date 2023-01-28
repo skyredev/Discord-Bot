@@ -1,8 +1,8 @@
 const { SlashCommandBuilder, CommandInteraction, PermissionFlagsBits } = require('discord.js');
 
-module.exports = {
+module.exports = { // Basic ping command - disabled
     name: 'ping',
-    disabled:true,
+    disabled: true,
     data: new SlashCommandBuilder()
         .setName('ping')
         .setDescription('Pong!')

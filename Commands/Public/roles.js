@@ -1,14 +1,14 @@
 const { Client, SlashCommandBuilder, CommandInteraction, PermissionFlagsBits, RoleManager, codeBlock} = require('discord.js');
 
-const {saveConfig, getConfig} = require("../../Services/configService");
 
-module.exports = {
+module.exports = { //Includes command for creating message with buttons to get roles and button handler for it. Hardcoded for now, cause used exactly for one server.
     name: 'roles',
     disabled:false,
     data: new SlashCommandBuilder()
         .setName('roles')
         .setDescription('Select your game server role!')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .setDMPermission(false)
     ,
 
     /**

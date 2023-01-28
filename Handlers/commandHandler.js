@@ -1,6 +1,6 @@
-const {getConfig} = require("../Services/configService");
+const tokens = require("../tokens.json");
 
-function loadCommands(client) {
+function loadCommands(client) { // Loads all commands from the commands folder made to make it easier to add commands
     const ascii = require('ascii-table');
     const fs = require('fs');
     const table = new ascii().setHeading('Commands', 'Status');
@@ -38,9 +38,8 @@ function loadCommands(client) {
             }
         }
     client.application.commands.set(commandsArray);
-    const config = getConfig()
 
-    const developerGuild = client.guilds.cache.get(config.developerGuild);
+    const developerGuild = client.guilds.cache.get(tokens.developerGuild);
 
     developerGuild.commands.set(developersArray);
 

@@ -1,4 +1,6 @@
 const { Client } = require('discord.js');
+const {request} = require("undici");
+const {getJSONResponse} = require("../../Services/requestServices");
 
 module.exports = {
     name: 'messageCreate',
@@ -10,8 +12,6 @@ module.exports = {
      */
     async execute(message, client){
         try {
-            if (message.author.bot) return;
-
 
             const matches = message.content.matchAll(/https:\/\/discord\.com\/channels\/\d{15,21}\/(\d{15,21})\/(\d{15,21})/gm);
 
@@ -31,13 +31,17 @@ module.exports = {
 
                 for (let i = 0; i < length; i++) {
                     const messageRef = messages[i];
+                    let description = `*"${messageRef.content}"*`;
+                    if(messageRef.embeds[0]!==undefined){
+                        description = `*"${messageRef.content}"\n${messageRef.embeds[0].title}\n${messageRef.embeds[0].description}*`
+                    }
                     if (messageRef) {
                         message.channel.send({
                             embeds: [
                                 {
                                     "type": "rich",
                                     "title": "",
-                                    "description": `*"${messageRef.content}"*`,
+                                    "description": `${description}`,
                                     "color": 0xff00c3,
                                     "fields": [
                                         {

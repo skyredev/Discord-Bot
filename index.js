@@ -1,13 +1,14 @@
 const {checkPatreon} = require("./Services/patreonService");
-const {getConfig} = require("./Services/configService");
-const {checkWebSite} = require("./Services/newsService");
+const tokens = require("./tokens.json");
 const { Client, GatewayIntentBits, Partials, Collection, EmbedBuilder } = require('discord.js');
 const { Guilds, GuildMembers, GuildMessages, DirectMessages , MessageContent, GuildMessageReactions } = GatewayIntentBits;
 const { User, Message, GuildMember, ThreadMember, Channel, Reaction } = Partials;
+const server = require('./server.js')
+const {request} = require('undici');
 
-const { request } = require('undici');
 const {loadEvents} = require('./Handlers/eventHandler');
 const {loadCommands} = require('./Handlers/commandHandler');
+const {getJSONResponse} = require("./Services/requestServices");
 
 
 const client = new Client({
@@ -16,16 +17,23 @@ const client = new Client({
 });
 client.commands=new Collection();
 
-const config = getConfig()
+
+
 
 client
-    .login(config.token)
+    .login(tokens.token)
     .then(() => {
         loadEvents(client);
         loadCommands(client);
+
+        server(client); //Runs express server for verification redirect_url
 
     })
     .catch(console.error);
 
 
+
+
 setInterval( checkPatreon, 5000*60, client);
+
+

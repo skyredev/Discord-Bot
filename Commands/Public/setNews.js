@@ -1,8 +1,8 @@
 const { Client, SlashCommandBuilder, CommandInteraction, PermissionFlagsBits } = require('discord.js');
 
-const {saveConfig, getConfig} = require("../../Services/configService");
+const Guilds = require('../../Models/Guilds');
 
-module.exports = {
+module.exports = { //News updates subscription configuration
     name: 'news',
     raw:{
         name: 'news',
@@ -50,9 +50,8 @@ module.exports = {
                 ]
             }
         ],
-        default_permission: undefined,
-        default_member_permissions: '2048',
-        dm_permission: undefined
+        default_member_permissions: 8,
+        dm_permission: false
     },
 
 
@@ -64,41 +63,32 @@ module.exports = {
      */
 
     async execute(interaction) {
-        if(interaction.options.getSubcommand()=='channel') {
+        if(interaction.options.getSubcommand()==='channel') {
             const channel = interaction.options.getChannel('channel');
-            const config = getConfig();
-            const guild = interaction.guild;
-            if (!config.guilds[guild.id])
-                config.guilds[guild.id] = {}
-            if (!config.guilds[guild.id].news)
-                config.guilds[guild.id].news = {}
-            config.guilds[guild.id].news.Channel = {id: channel.id, name: channel.name};
-            saveConfig(config);
-            return interaction.reply({content: 'Channel set!', ephemeral: true});
+            const guild = await Guilds.findOne({id: interaction.guild.id});
+
+            guild.news.channel.id = channel.id;
+            guild.news.channel.name = channel.name;
+            await guild.save();
+            return interaction.reply({content: `News channel set to ${channel}`, ephemeral: true});
+
         }
-        else if(interaction.options.getSubcommand()=='status') {
+        else if(interaction.options.getSubcommand()==='status') {
             const status = interaction.options.getBoolean('on-off');
-            const config = getConfig();
-            const guild = interaction.guild;
-            if (!config.guilds[guild.id])
-                config.guilds[guild.id] = {}
-            if (!config.guilds[guild.id].news)
-                config.guilds[guild.id].news = {}
-            config.guilds[guild.id].news.Status = status;
-            saveConfig(config);
-            return interaction.reply({content: 'Status set!', ephemeral: true});
+            const guild = await Guilds.findOne({id: interaction.guild.id});
+
+            guild.news.status = status;
+            await guild.save();
+            return interaction.reply({content: `News status set to ${status}`, ephemeral: true});
+
         }
-            else if(interaction.options.getSubcommand()=='ping') {
+            else if(interaction.options.getSubcommand()==='ping') {
                 const role = interaction.options.getRole('role');
-                const config = getConfig();
-                const guild = interaction.guild;
-                if (!config.guilds[guild.id])
-                    config.guilds[guild.id] = {}
-                if (!config.guilds[guild.id].news)
-                    config.guilds[guild.id].news = {}
-                config.guilds[guild.id].news.Ping = role.id;
-                saveConfig(config);
-                return interaction.reply({content: 'Ping set!', ephemeral: true});
+                const guild = await Guilds.findOne({id: interaction.guild.id});
+
+                guild.news.ping = role.id;
+                await guild.save();
+                return interaction.reply({content: `News ping set to ${role}`, ephemeral: true});
             }
 
 

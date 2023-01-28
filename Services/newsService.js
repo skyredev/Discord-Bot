@@ -1,14 +1,14 @@
 const { JSDOM } = require("jsdom");
 const _ = require("lodash");
 const {sendRequest, getTextResponse} = require("./requestServices");
-const {getConfig, saveConfig} = require("./configService");
 const {request} = require('undici');
 const {codeBlock} = require("discord.js");
 const crypto = require('crypto');
+const Guilds = require('../Models/Guilds');
 
-async function  requestWebSite() {
+async function requestWebSite(link) {// Deprecated/Not used anymore
         try{
-            const response = await request('https://sites.google.com/view/commandersconflict/patch-notes?authuser=0');
+            const response = await request(`${link}`);
             const text = await getTextResponse(response.body);
             const dom = new JSDOM(text);
             const main = dom.window.document.querySelector("div[role=main]")
@@ -25,42 +25,35 @@ async function  requestWebSite() {
 }
 
 
- async function  checkWebSite(client) {
+ async function checkWebSite(client, link) {
 
-     const config = getConfig()
-    const newsChannels =  _.flatten(  Object.keys( config.guilds ).map( guildId => {
-        try {
-            return { ...config.guilds[guildId].news.Channel, guildId}
-        }catch (e){
-            console.error(e)
-        }
 
-    }))
+    const newsChannels =  await Guilds.find({ "news.channel.id": { $ne: null } });
 
-     const content =  await requestWebSite( )
+     const content =  await requestWebSite( link )
      if(!content) return
 
      const hash = crypto.createHash('md5').update( JSON.stringify(content)).digest('hex')
 
      try {
-         return Promise.all(newsChannels.map(channel => {
-             try{
-                 if(config.guilds[channel.guildId].news.Hash !== hash && config.guilds[channel.guildId].news.Status !== false){
+         for(let i = 0; i < newsChannels.length; i++) {
+             try {
+                 const guild = newsChannels[i]
+                 if (guild.news.hash !== hash && guild.news.status !== false) {
+                     const channel = client.channels.cache.get(guild.news.channel.id)
                      console.log("New Website content")
-                     sendRequest(client, channel, codeBlock("fix", `Website changes detected: \n \n ${content}`))
+                     await sendRequest(client, channel, codeBlock("fix", `Website changes detected: \n \n ${content}`))
                  }
-                 config.guilds[channel.guildId].news.Hash = hash
-             }catch (e){
+                 guild.news.hash = hash
+                 await guild.save()
+             } catch (e) {
                  console.error(e)
              }
-
-         }))
+         }
      }catch(e){
          console.error(e)
      }
-     finally {
-         saveConfig(config)
-     }
+
 
 
 }

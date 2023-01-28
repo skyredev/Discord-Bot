@@ -9,6 +9,8 @@ module.exports = {
      */
     async execute(client){
         client.user.setActivity(`Commanders Conflict`, { type: 5 });
+        //send message
+
         console.log(`Logged in as ${client.user.username}!`)
     }
 }

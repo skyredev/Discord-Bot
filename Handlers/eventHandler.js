@@ -1,4 +1,4 @@
-function loadEvents(client){
+function loadEvents(client){ // Loads all the events in the Events folder made to make it easier to add events
     const ascii = require('ascii-table');
     const fs = require('fs');
     const table = new ascii().setHeading('Events', 'Status');
