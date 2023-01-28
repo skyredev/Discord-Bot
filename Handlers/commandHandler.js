@@ -39,10 +39,6 @@ function loadCommands(client) { // Loads all commands from the commands folder m
         }
     client.application.commands.set(commandsArray);
 
-    const developerGuild = client.guilds.cache.get(tokens.developerGuild);
-
-    developerGuild.commands.set(developersArray);
-
     console.log(table.toString(), "\n Loaded Commands!");
 
 }

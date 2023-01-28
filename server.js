@@ -1,7 +1,7 @@
 const { request } = require('undici');
 const express = require('express');
 const { clientId, clientSecret, port, redirectUrl } = require('./tokens.json');
-const {verifyUser} = require('./services/databaseServices');
+const {verifyUser} = require('./Services/dataBaseServices');
 const {getUser} = require("./Services/dataBaseServices");
 
 function init(client) {

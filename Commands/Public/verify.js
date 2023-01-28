@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, CommandInteraction, PermissionFlagsBits, codeBlock} = require('discord.js');
-const { ip, port } = require('../../tokens.json');
+const { ip, port, clientId } = require('../../tokens.json');
 
 module.exports = { // Creates message with the link button for verification, the link uses discord OAuth2 to get the user's identity and 3rd party connections (Battle.net) then uses server side verification to verify the user
     name: 'verify',
@@ -31,7 +31,7 @@ module.exports = { // Creates message with the link button for verification, the
                         {
                             "style": 5,
                             "label": `VERIFY`,
-                            "url" : `https://discord.com/api/oauth2/authorize?client_id=1010155156815499404&state=${guild}&redirect_uri=http%3A%2F%2F${ip}%3A${port}&response_type=code&scope=identify%20connections`,
+                            "url" : `https://discord.com/api/oauth2/authorize?client_id=${clientId}&state=${guild}&redirect_uri=http%3A%2F%2F${ip}%3A${port}&response_type=code&scope=identify%20connections`,
                             "disabled": false,
                             "type": 2
                         },
