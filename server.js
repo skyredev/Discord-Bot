@@ -1,6 +1,6 @@
 const { request } = require('undici');
 const express = require('express');
-const { clientId, clientSecret, port, redirectUrl } = require('./tokens.json');
+const { clientId, clientSecret, port, redirectUrl, discordUrl } = require('./tokens.json');
 const {verifyUser} = require('./Services/dataBaseServices');
 const {getUser} = require("./Services/dataBaseServices");
 
@@ -50,7 +50,7 @@ function init(client) {
             }
         }
 
-        return (response.redirect(`https://discord.gg/RKSMYxaeAe`)); // Redirect to your server / Hardcoded link to one exact server
+        return (response.redirect(`${discordUrl}`)); // Redirect to your server / Hardcoded link to one exact server
     });
     app.listen(port, () => console.log(`App listening at ${redirectUrl}`));
 }
