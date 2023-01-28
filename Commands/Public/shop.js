@@ -178,7 +178,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                                             },
                                             color: Math.floor(Math.random() * 16777214) + 1,
                                             footer: {
-                                                text: `ID: ${id}`,
+                                                text: `ID: shop_${id}`,
                                             }
                                         }],
                                     components: [
