@@ -37,6 +37,10 @@ let GuildSchema = new Schema({
             }
         },
         shop: {
+            logChannel:{
+                id: String,
+                name: String,
+            },
             channel: {
                 id: String,
                 name: String,

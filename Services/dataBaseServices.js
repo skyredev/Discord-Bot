@@ -6,6 +6,7 @@ const Discord = require("../Models/Discord");
 const Guilds = require('../Models/Guilds');
 const _ = require("lodash");
 const {GuildManager} = require('discord.js');
+const {indexOf} = require("lodash");
 
 
 mongoose.connect(tokens.database);
@@ -251,6 +252,10 @@ async function createGuild(guild){
                     }
                 },
                 shop:{
+                    logChannel: {
+                        id: null,
+                        name: null,
+                    },
                     channel: {
                         id: null,
                         name: null,
@@ -526,6 +531,49 @@ async function calculateCrystals(players){
 
 }
 
+async function purchases(client){
+    const players = await Player.find({ items: { $exists: true } }).populate('items');
+
+    for (const player of players) {
+        const items = player.items;
+
+        for (const item of items) {
+            if (item.new === true) {
+                item.new = false;
+                player.markModified('items');
+                await player.save();
+                await sendMessage(player, item, client);
+            }
+        }
+
+
+    }
+    async function sendMessage(player, item, client) {
+        const guilds = await Guilds.find({$exists: {shop: true}});
+        await Promise.all(guilds.map(async guild => {
+            try{
+                const thisGuild = await client.guilds.cache.get(guild.id);
+                const thisChannel = await thisGuild.channels.fetch(guild.shop.logChannel.id);
+                thisChannel.send({
+                    "content": "",
+                    "tts": false,
+                    "embeds": [
+                        {
+                            "type": "rich",
+                            "title": `Daily Purchase Log`,
+                            "description": `**${player.battleTag}** has purchased **${item.id}** for ${item.price} crystals!`,
+                            "color": Math.floor((new Date).getDate()/1000 * 16777214) + 1,
+                            "timestamp": new Date(),
+                        }
+                    ]
+                    , ephemeral: false})
+            }catch (e){
+            }
+        }))
+
+    }
+}
+
 async function calculateRank(players){
     const Ranks = {
         0: 'Bronze',
@@ -541,6 +589,6 @@ async function calculateRank(players){
 
 
 
-module.exports = {requestGameData, createGuild, verifyUser, getUser}
+module.exports = {requestGameData, createGuild, verifyUser, getUser, purchases}
 
 

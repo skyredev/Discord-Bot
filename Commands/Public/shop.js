@@ -60,6 +60,12 @@ module.exports = { // The shop, where users can by any items you created, includ
                         "required": true,
                     },
                     {
+                        "type": 5,
+                        "name": "donator",
+                        "description": "Required donator level to buy this item",
+                        "required": true,
+                    },
+                    {
                         "type": 11,
                         "name": "image",
                         "description": "Image of the item",
@@ -94,6 +100,11 @@ module.exports = { // The shop, where users can by any items you created, includ
                         "description": "Price of the item",
                     },
                     {
+                        "type": 5,
+                        "name": "donator",
+                        "description": "Required donator level to buy this item",
+                    },
+                    {
                         "type": 11,
                         "name": "image",
                         "description": "Image of the item",
@@ -119,6 +130,20 @@ module.exports = { // The shop, where users can by any items you created, includ
                     },
                 ],
             },
+            {
+                "type": 1,
+                "name": "logchannel",
+                "description": "Set log channel",
+                "options": [
+                    {
+                        "type": 7,
+                        "name": "log",
+                        "description": "Choose a channel",
+                        "required": true,
+                        channelTypes: [0]
+                    }
+                ]
+            },
         ],
         default_member_permissions: 8,
         dm_permission: false,
@@ -140,6 +165,15 @@ module.exports = { // The shop, where users can by any items you created, includ
             await guild.save();
             return interaction.reply({content: `Shop channel set to ${channel}`, ephemeral: true});
         }
+        if(interaction.options.getSubcommand()==='logchannel') {
+            const channel = interaction.options.getChannel('log');
+            const guild = await Guilds.findOne({id: interaction.guild.id});
+
+            guild.shop.logChannel.id = channel.id;
+            guild.shop.logChannel.name = channel.name;
+            await guild.save();
+            return interaction.reply({content: `Shop channel set to ${channel}`, ephemeral: true});
+        }
 
         else if(interaction.options.getSubcommand()==='create') {
             try {
@@ -148,6 +182,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 const id = interaction.options.getString('id');
                 const type = interaction.options.getString('type');
                 const price = interaction.options.getInteger('price');
+                const donator = interaction.options.getBoolean('donator');
                 const image = interaction.options.getAttachment('image');
 
 
@@ -159,11 +194,17 @@ module.exports = { // The shop, where users can by any items you created, includ
                         if (channel.availableTags[i].name.toLowerCase() === type.toLowerCase()) {
                             tags.push(channel.availableTags[i].id)
                         }
+                        if (donator === true) {
+                            if (channel.availableTags[i].name.toLowerCase() === 'sponsors') {
+                                tags.push(channel.availableTags[i].id)
+                            }
+                        }
                     }
+
+
                     if (channel) {
                         channel = await channel.threads.create({
                                 name: title,
-                                autoArchiveDuration: 1440,
                                 reason: 'Shop Item',
                                 message: {
                                     embeds: [
@@ -208,6 +249,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                             type: type,
                             price: price,
                             image: image.url,
+                            donator: donator,
                             base: {
                                 channel: channel.id,
                                 guild: channel.guildId,
@@ -237,6 +279,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 const description = interaction.options.getString('description');
                 const id = interaction.options.getString('id');
                 const price = interaction.options.getInteger('price');
+                const donator = interaction.options.getBoolean('donator');
                 const image = interaction.options.getAttachment('image');
 
 
@@ -258,6 +301,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                                     type: item.type,
                                     price: price === null ? item.price : price,
                                     image: image === null ? item.image : image.url,
+                                    donator: donator === null ? item.donator : donator,
                                     base: {
                                         channel: channel.id,
                                         guild: channel.guildId,
@@ -345,10 +389,13 @@ module.exports = { // The shop, where users can by any items you created, includ
             const guild = await Guilds.findOne({id: interaction.guild.id});
             const player = await Player.findOne({discordId: interaction.user.id});
             const item = guild.shop.items.find(i => i.id === id);
-            const channel = interaction.guild.channels.cache.get(item.base.channel);
             if(player){
                 if(player.items.find(i => i.id === id)) {
                     interaction.reply({content: `You already have this item`, ephemeral: true});
+
+                }
+                else if (item.donator && !player.isDonator){
+                    interaction.reply({content: `You must be a sponsor to buy this item`, ephemeral: true});
                 }
                 else{
                     if (player.crystals >= item.price) {
@@ -367,6 +414,8 @@ module.exports = { // The shop, where users can by any items you created, includ
                         })
                         await player.save();
                         interaction.reply({content: `You bought ${item.title} for ${item.price} 💎\nYou have ${player.crystals} 💎 now`, ephemeral: true});
+
+
                     }
                     else {
                         interaction.reply({content: `You don't have enough crystals`, ephemeral: true});

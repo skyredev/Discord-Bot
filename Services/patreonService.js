@@ -29,7 +29,7 @@ async function  requestPatreon() {
 
 async function  checkPatreon(client) {
 
-        const patreonChannels = await Guilds.find({ "patreon.channel.id": { $ne: null } });
+        const allGuilds = await Guilds.find({ "patreon.channel.id": { $ne: null } });
 
         const content =  await requestPatreon( )
         if ( !content) return
@@ -38,9 +38,9 @@ async function  checkPatreon(client) {
 
 
         try {
-            for (let i = 0; i < patreonChannels.length; i++) {
+            for (let i = 0; i < allGuilds.length; i++) {
                 try {
-                    const guild = patreonChannels[i]
+                    const guild = allGuilds[i]
                     if (guild.patreon.hash !== hash && guild.patreon.status !== false) {
                         const channel = client.channels.cache.get(guild.patreon.channel.id)
                         const thisGuild = client.guilds.cache.get(guild.id)
