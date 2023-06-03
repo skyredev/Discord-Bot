@@ -1,7 +1,6 @@
 const {sendRequest, getJSONResponse} = require("./requestServices");
 const {request} = require('undici');
 const crypto = require('crypto');
-const _ = require("lodash");
 const {codeBlock} = require("discord.js");
 const Guilds = require('../Models/Guilds');
 

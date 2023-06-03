@@ -1,8 +1,7 @@
-const { Client, CommandInteraction, PermissionFlagsBits } = require('discord.js');
+const { CommandInteraction } = require('discord.js');
 
 const Guilds = require('../../Models/Guilds');
 const Player = require('../../Models/Player');
-const {ip} = require("../../tokens.json");
 
 module.exports = { // The shop, where users can by any items you created, includes channel, items setup. Uses Discord Forum and threads to create shop and display items
     name: 'shop',

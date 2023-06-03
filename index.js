@@ -1,16 +1,14 @@
 const {checkPatreon} = require("./Services/patreonService");
 const {updateShopImage} = require("./Services/shopImageService");
 const tokens = require("./tokens.json");
-const { Client, GatewayIntentBits, Partials, Collection, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection} = require('discord.js');
 const { Guilds, GuildMembers, GuildMessages, DirectMessages , MessageContent, GuildMessageReactions } = GatewayIntentBits;
 const { User, Message, GuildMember, ThreadMember, Channel, Reaction } = Partials;
 const server = require('./server.js')
-const {request} = require('undici');
 const {purchases} = require("./Services/dataBaseServices");
 
 const {loadEvents} = require('./Handlers/eventHandler');
 const {loadCommands} = require('./Handlers/commandHandler');
-const {getJSONResponse} = require("./Services/requestServices");
 
 
 const client = new Client({

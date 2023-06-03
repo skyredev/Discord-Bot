@@ -4,9 +4,6 @@ const Player = require('../Models/Player');
 const tokens = require("../tokens.json");
 const Discord = require("../Models/Discord");
 const Guilds = require('../Models/Guilds');
-const _ = require("lodash");
-const {GuildManager} = require('discord.js');
-const {indexOf} = require("lodash");
 
 
 mongoose.connect(tokens.database);
