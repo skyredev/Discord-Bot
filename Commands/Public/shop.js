@@ -2,6 +2,7 @@ const { CommandInteraction } = require('discord.js');
 
 const Guilds = require('../../Models/Guilds');
 const Player = require('../../Models/Player');
+const {purchases} = require("../../Services/dataBaseServices");
 
 module.exports = { // The shop, where users can by any items you created, includes channel, items setup. Uses Discord Forum and threads to create shop and display items
     name: 'shop',
@@ -370,7 +371,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 if(player) {
                     player.crystals += amount;
                     await player.save();
-                    await member.send({content: `You have been given ${amount} 💎 by ${interaction.user.username} on ${interaction.guild.name} server`});
+                    await member.send({content: `You received ${amount} 💎 from ${interaction.user.username} on ${interaction.guild.name} server`});
                     return interaction.reply({content: `Gave ${amount} 💎 to ${user.username}`, ephemeral: true});
                 }
                 else{
@@ -413,6 +414,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                         })
                         await player.save();
                         interaction.reply({content: `You bought ${item.title} for ${item.price} 💎\nYou have ${player.crystals} 💎 now`, ephemeral: true});
+                        await purchases(client)
 
 
                     }

@@ -557,9 +557,31 @@ async function purchases(client){
                     "embeds": [
                         {
                             "type": "rich",
-                            "title": `Daily Purchase Log`,
-                            "description": `**${player.battleTag}** has purchased **${item.id}** for ${item.price} crystals!`,
-                            "color": Math.floor((new Date).getDate()/1000 * 16777214) + 1,
+                            "title": `Purchase Log`,
+                            "description": `New Purchase - **${item.type}**`,
+                            "color": Math.floor((new Date).getDate()/1000/4*7*11/3*6*9/14 * 16777214) + 1,
+                            "fields": [
+                                {
+                                    "name": "Player",
+                                    "value": `**${player.battleTag}**`,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Price",
+                                    "value": `**${item.price}**`,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Item",
+                                    "value": `**${item.id}**`,
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Sponsor",
+                                    "value": `**${player.isDonator}**`,
+                                    "inline": true
+                                }
+                            ],
                             "timestamp": new Date(),
                         }
                     ]
