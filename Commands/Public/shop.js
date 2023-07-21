@@ -212,11 +212,6 @@ module.exports = { // The shop, where users can by any items you created, includ
                                             type: 'rich',
                                             title: title,
                                             description: description,
-                                            image: {
-                                                url: image.url,
-                                                width: 0,
-                                                height: 0
-                                            },
                                             color: Math.floor(Math.random() * 16777214) + 1,
                                             footer: {
                                                 text: `ID: shop_${id}`,
@@ -236,6 +231,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                                             ]
                                         }
                                     ],
+                                    files: [image.url]
                                 },
                                 appliedTags: tags
                             }
@@ -316,11 +312,6 @@ module.exports = { // The shop, where users can by any items you created, includ
                                             type: 'rich',
                                             title: item.title,
                                             description: item.description,
-                                            image: {
-                                                url: item.image,
-                                                width: 0,
-                                                height: 0
-                                            },
                                             color: Math.floor(Math.random() * 16777214) + 1,
                                             footer: {
                                                 text: `ID: ${item.id}`
@@ -340,6 +331,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                                             ]
                                         }
                                     ],
+                                    files: [item.image]
                                 })
 
 
@@ -410,7 +402,8 @@ module.exports = { // The shop, where users can by any items you created, includ
                                 channel: item.base.channel.id,
                                 guild: item.base.channel.guildId,
                             },
-                            new: true
+                            new: true,
+                            source: "shop"
                         })
                         await player.save();
                         interaction.reply({content: `You bought ${item.title} for ${item.price} 💎\nYou have ${player.crystals} 💎 now`, ephemeral: true});

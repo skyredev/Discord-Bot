@@ -4,6 +4,7 @@ const Player = require('../Models/Player');
 const tokens = require("../tokens.json");
 const Discord = require("../Models/Discord");
 const Guilds = require('../Models/Guilds');
+const {patreon} = require("patreon");
 
 
 mongoose.connect(tokens.database);
@@ -259,12 +260,84 @@ async function createGuild(guild){
                     },
                     items: [],
                 },
-                wiki: []
+                wiki: [],
+                codes: {
+                    logChannel: {
+                        id: null,
+                        name: null,
+                    },
+                    codePaths: [],
+                },
             })
             await newGuild.save();
         }
         else {
-            console.log('Guild already exists')
+            // update not existed fields
+            if(!find.patreon){
+                find.patreon = {
+                    channel: {
+                        id: null,
+                        name: null,
+                    },
+                    status: null,
+                    hash: null,
+                    ping: null,
+                }
+            }
+            if(!find.news){
+                find.news = {
+                    channel: {
+                        id: null,
+                        name: null,
+                    },
+                    status: null,
+                    ping: null,
+                    hash: null,
+                }
+            }
+            if(!find.verify){
+                find.verify = {
+                    logChannel: {
+                        id: null,
+                        name: null,
+                    },
+                    donatorRole: {
+                        id: null,
+                        name: null,
+                    },
+                    verifyRole: {
+                        id: null,
+                        name: null,
+                    }
+                }
+            }
+            if(!find.shop){
+                find.shop = {
+                    logChannel: {
+                        id: null,
+                        name: null,
+                    },
+                    channel: {
+                        id: null,
+                        name: null,
+                    },
+                    items: [],
+                }
+            }
+            if(!find.wiki){
+                find.wiki = []
+            }
+            if(!find.codes){
+                find.codes= {
+                    logChannel: {
+                        id: null,
+                        name: null,
+                    },
+                    codePaths: [],
+                }
+            }
+            console.log("updated guild")
+            await find.save();
         }
     }catch (err){
         console.log(err)
@@ -545,8 +618,15 @@ async function purchases(client){
 
 
     }
-    async function sendMessage(player, item, client) {
+    async function sendMessage(player, item, client){
         const guilds = await Guilds.find({$exists: {shop: true}});
+        let message = null
+        if(item.source === "shop"){
+            message = "Shop Purchase Log"
+        }
+        else if(item.source === "promocode"){
+            message = "Promocode Activation Log"
+        }
         await Promise.all(guilds.map(async guild => {
             try{
                 const thisGuild = await client.guilds.cache.get(guild.id);
@@ -557,7 +637,7 @@ async function purchases(client){
                     "embeds": [
                         {
                             "type": "rich",
-                            "title": `Purchase Log`,
+                            "title": message,
                             "description": `New Purchase - **${item.type}**`,
                             "color": Math.floor((new Date).getDate()/1000/4*7*11/3*6*9/14 * 16777214) + 1,
                             "fields": [
@@ -591,6 +671,62 @@ async function purchases(client){
         }))
 
     }
+
+
+}
+async function codeCreated(code, crystals, items, limit, duration, client){
+    const guilds = await Guilds.find({$exists: {shop: true}});
+    if(items.length === 0){
+        items[0] = "null";
+    }
+    else{
+        items = items.map(item => item.title);
+    }
+
+
+    await Promise.all(guilds.map(async guild => {
+        try{
+            const thisGuild = await client.guilds.cache.get(guild.id);
+            const thisChannel = await thisGuild.channels.fetch(guild.codes.logChannel.id);
+            thisChannel.send({
+                "content": "",
+                "tts": false,
+                "embeds": [
+                    {
+                        "type": "rich",
+                        "title": "New promocode created!",
+                        "description": `\n**${code}**\n`,
+                        "color": Math.floor((new Date).getDate()/1000/4*7*11/3*6*9/14 * 16777214) + 1,
+                        "fields": [
+                            {
+                                "name": "Crystals",
+                                "value": `${crystals}`,
+                                "inline": true
+                            },
+                            {
+                                "name": "Items",
+                                "value": `${items.join('\n')}`,
+                                "inline": true
+                            },
+                            {
+                                "name": "Limit",
+                                "value": `${limit}`,
+                                "inline": true
+                            },
+                            {
+                                "name": "Valid till",
+                                "value": `${duration}`,
+                                "inline": true,
+                            }
+                        ],
+                        "timestamp": new Date(),
+                    }
+                ]
+                , ephemeral: false})
+        }catch (e){
+        }
+    }))
+
 }
 
 async function calculateRank(players){
@@ -608,6 +744,6 @@ async function calculateRank(players){
 
 
 
-module.exports = {requestGameData, createGuild, verifyUser, getUser, purchases}
+module.exports = {requestGameData, createGuild, verifyUser, getUser, purchases, codeCreated}
 
 

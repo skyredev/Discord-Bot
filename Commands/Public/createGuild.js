@@ -16,7 +16,7 @@ module.exports = { //Initializes the guild in the database if somehow it was not
      */
     async execute(interaction) {
         await createGuild(interaction.guild);
-        return interaction.reply({content: 'Guild Created!', ephemeral: true});
+        return interaction.reply({content: 'Guild Updated!', ephemeral: true});
     }
 
 

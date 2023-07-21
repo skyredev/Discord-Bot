@@ -48,6 +48,13 @@ let GuildSchema = new Schema({
             items: Array,
         },
         wiki: Array,
+        codes: {
+            logChannel: {
+                id: String,
+                name: String,
+            },
+            codePaths: Array,
+        }
 });
 
 GuildSchema.index({id: 1}, {unique: true});

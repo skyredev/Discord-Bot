@@ -23,7 +23,8 @@ let PlayerSchema = new Schema({
         timePlayedPerGame: Number,
         MMR: Number,
         rank: String,
-    }
+    },
+    codesUsed: Array,
 });
 
 PlayerSchema.index({battleTag: 1, discordId: 1}, {unique: true});
