@@ -14,7 +14,7 @@ module.exports = {
     async execute(message, client){
         const botID = '672155669633171488'
         const time = 60*1000;
-        const abandonTime = 3*60*60*1000;  // Time after which the game is considered abandoned and the bot will stop watching it
+        const abandonTime = 24*60*60*1000;  // Time after which the game is considered abandoned and the bot will stop watching it
         const abandonCounter = abandonTime/time;
 
         try {
