@@ -82,7 +82,7 @@ module.exports = {
                             console.log(`Waiting for game to end. Game ID is ${gameId}`)
                             counter++;
                             if (counter > abandonCounter) {
-                                message.channel.send({content:`The game has been running for over 3 hours. It may have been abandoned. Game ID: ${gameId} \nRegion ID: ${regionId} \nServer ID: ${serverId} \nGame Mode: ${lobbyData.mapVariantMode}\nGame Link: https://sc2arcade.com/lobby/${regionId}/${serverId}/${gameId}`})
+                                message.channel.send({content:`The game has been running for over 24 hours. It may have been abandoned. Game ID: ${gameId} \nRegion ID: ${regionId} \nServer ID: ${serverId} \nGame Mode: ${lobbyData.mapVariantMode}\nGame Link: https://sc2arcade.com/lobby/${regionId}/${serverId}/${gameId}`})
                                 return;
                             }
                             setTimeout(checker, time);
