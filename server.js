@@ -10,6 +10,30 @@ function init(client) {
     app.get('/ping', (req, res) => {
         res.send('pong')
     })
+
+/*    app.get('/files', (req, res) => {
+
+        const files = [ { name: "rel",totalSize: 0, files: [] }];
+
+
+        c,v,.xcv
+
+        files.push({name, path: , size:  hash })
+
+
+
+
+
+    })
+
+    app.get("/file", (req, res) => {
+        const {path} = req.query;
+
+        .pipe(res)
+    })*/
+
+
+
     app.get('/', async ({ query }, response) => {
         const { code } = query;
 
@@ -28,10 +52,8 @@ function init(client) {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
                 });
-                console.log(`tokenResponseData: ${JSON.stringify( tokenResponseData)}`)
 
                 const oauthData = await tokenResponseData.body.json();
-                console.log(`oauthData: ${JSON.stringify(oauthData)}`)
                 let userInfo = await request('https://discord.com/api/users/@me', {
                     headers: {
                         authorization: `${oauthData.token_type} ${oauthData.access_token}`,
@@ -45,8 +67,6 @@ function init(client) {
                 const guild = JSON.parse(atob(query.state)).id;
                 userInfo = await userInfo.body.json();
                 connectionsInfo = await connectionsInfo.body.json();
-                console.log(userInfo)
-                console.log(connectionsInfo)
                 await getUser(userInfo, guild, client)
                 await verifyUser(userInfo, connectionsInfo, client, guild);
 

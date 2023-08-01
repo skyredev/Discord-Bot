@@ -57,6 +57,7 @@ async function requestGameData(gameId, regionId, serverId, gameLink, gameMode, p
             const player = players.players[i];
             await playerData(player.battleTag, player.decision, gameData);
         }
+
         await calculateMultiplier(gameData.players);
         await calculateMMR(gameData.players)
         await calculateCrystals(gameData.players);
@@ -352,7 +353,6 @@ async function verifyUser(userInfo, connectionsInfo, client, guild){
 
         const guildDb = await Guilds.findOne({id: guild})
         const user = await Discord.findOne({id: userInfo.id});
-        console.log(connectionsInfo)
         const BNet = connectionsInfo.find(connection => connection.type === 'battlenet');
 
         const member =  await server.members.fetch(userInfo.id);
@@ -593,7 +593,7 @@ async function calculateCrystals(players){
                 if(player.decision === 'win') {
                     decisionMultiplier = 1.5;
                 }
-                dbPlayer.crystals += amount * players.length * decisionMultiplier * player.multiplier;
+                dbPlayer.crystals += amount * players.length * decisionMultiplier * dbPlayer.multiplier;
                 await dbPlayer.save();
             }
         }catch (e) {
