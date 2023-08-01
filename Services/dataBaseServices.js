@@ -352,6 +352,7 @@ async function verifyUser(userInfo, connectionsInfo, client, guild){
 
         const guildDb = await Guilds.findOne({id: guild})
         const user = await Discord.findOne({id: userInfo.id});
+        console.log(connectionsInfo)
         const BNet = connectionsInfo.find(connection => connection.type === 'battlenet');
 
         const member =  await server.members.fetch(userInfo.id);
