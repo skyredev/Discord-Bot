@@ -7,6 +7,9 @@ const {getUser} = require("./Services/dataBaseServices");
 function init(client) {
 
     const app = express();
+    app.get('/ping', (req, res) => {
+        res.send('pong')
+    })
     app.get('/', async ({ query }, response) => {
         const { code } = query;
 
