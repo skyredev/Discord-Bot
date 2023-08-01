@@ -41,9 +41,10 @@ function init(client) {
                     },
                 });
                 const guild = JSON.parse(atob(query.state)).id;
-
                 userInfo = await userInfo.body.json();
                 connectionsInfo = await connectionsInfo.body.json();
+                console.log(userInfo)
+                console.log(connectionsInfo)
                 await getUser(userInfo, guild, client)
                 await verifyUser(userInfo, connectionsInfo, client, guild);
 
