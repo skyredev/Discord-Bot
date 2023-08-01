@@ -47,6 +47,7 @@ function init(client) {
 
             } catch (error) {
                 console.error(error);
+                return (response.text(error.stack))
             }
         }
 
