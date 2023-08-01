@@ -28,8 +28,10 @@ function init(client) {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
                 });
+                console.log(`tokenResponseData: ${tokenResponseData}`)
 
                 const oauthData = await tokenResponseData.body.json();
+                console.log(`oauthData: ${oauthData}`)
                 let userInfo = await request('https://discord.com/api/users/@me', {
                     headers: {
                         authorization: `${oauthData.token_type} ${oauthData.access_token}`,
