@@ -3,6 +3,47 @@ const express = require('express');
 const { clientId, clientSecret, port, redirectUrl, discordUrl } = require('./tokens.json');
 const {verifyUser} = require('./Services/dataBaseServices');
 const {getUser} = require("./Services/dataBaseServices");
+const { google } = require('googleapis');
+const contentDisposition  = require('content-disposition');
+const path = require("path");
+
+
+const keyFile = path.join(__dirname, 'service.json');
+const key = require(keyFile);
+const auth = new google.auth.GoogleAuth({
+    credentials: key,
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+});
+const FOLDER_ID = '120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt';
+
+function driveInit() {
+    return google.drive({ version: 'v3', auth});
+}
+
+
+async function getFolder(folderId, filesPackage, currentPath = '',  ) {
+    try {
+        const response = await driveInit().files.list({
+            q: `'${folderId}' in parents and trashed=false`,
+            fields: 'files(id, name, mimeType, size, md5Checksum)',
+        });
+        const files = response.data.files;
+        for (const file of files) {
+            console.log( path.join(currentPath, file.name) )
+            if (file.mimeType === 'application/vnd.google-apps.folder') {
+                await getFolder(file.id, filesPackage, path.join(currentPath, file.name));
+            } else {
+                // If the local file doesn't exist, or the MD5 checksums don't match, then add the file size to totalSize
+                filesPackage.totalSize += parseInt(file.size);
+                filesPackage.files.push({ name: file.name, size: parseInt(file.size), id: file.id, path: path.join(currentPath, file.name), md5Checksum:file.md5Checksum });
+            }
+
+        }
+    } catch (err) {
+        console.error('Error fetching files:', err);
+        return 0;
+    }
+}
 
 function init(client) {
 
@@ -11,26 +52,42 @@ function init(client) {
         res.send('pong')
     })
 
-/*    app.get('/files', (req, res) => {
+    app.get('/files', async (req, res) => {
 
-        const files = [ { name: "rel",totalSize: 0, files: [] }];
+        const result = [];
+
+        const gDrive = driveInit();
+
+        const response  = await gDrive.files.list({
+            q: `'${FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+            fields: 'files(id, name)',
+        });
+
+        const subfolders = response.data.files;
+
+        await Promise.all( subfolders.map( async subFolder => {
+            result.push({ name: subFolder.name ,totalSize: 0, files: [] })
+            await getFolder(subFolder.id, result[result.length - 1])
+        }))
 
 
-        c,v,.xcv
-
-        files.push({name, path: , size:  hash })
-
-
-
-
-
+        res.json(result);
     })
 
-    app.get("/file", (req, res) => {
-        const {path} = req.query;
+    app.get("/files/:fileId", (req, res) => {
 
-        .pipe(res)
-    })*/
+        return driveInit().files.get(
+            { fileId:req.params.fileId, alt: 'media' },
+            { responseType: 'stream' }
+        )
+            .then((response) => {
+
+                res.setHeader('Content-disposition', contentDisposition(response.headers['content-disposition']));
+
+                response.data.pipe(res);
+            });
+
+    })
 
 
 

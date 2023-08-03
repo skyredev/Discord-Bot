@@ -1,4 +1,5 @@
 tokens.json
+service.json
 # Logs
 logs
 *.log
