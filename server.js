@@ -10,12 +10,14 @@ const path = require("path");
 
 const keyFile = path.join(__dirname, 'service.json');
 const key = require(keyFile);
+let accessToken = null;
 const auth = new google.auth.GoogleAuth({
     credentials: key,
     scopes: ['https://www.googleapis.com/auth/drive.readonly'],
 });
-const FOLDER_ID = '120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt';
 
+
+const FOLDER_ID = '120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt';
 function driveInit() {
     return google.drive({ version: 'v3', auth});
 }
@@ -52,6 +54,28 @@ function init(client) {
         res.send('pong')
     })
 
+    app.get('/token', (req, res) => {
+        const jwtClient = new google.auth.JWT(
+            key.client_email,
+            null,
+            key.private_key,
+            ['https://www.googleapis.com/auth/drive.readonly'],
+            null
+        );
+        jwtClient.authorize((err, tokens) => {
+            if (err) {
+                console.error("Error making request to generate access token:", err);
+            } else if (tokens.access_token === null) {
+                console.error("Provided service account does not have permission to generate access tokens");
+            } else {
+                accessToken = tokens.access_token;
+                res.send(accessToken);
+                console.log(`access ${accessToken}`)
+
+            }
+        });
+
+    })
     app.get('/files', async (req, res) => {
 
         const result = [];
@@ -74,7 +98,7 @@ function init(client) {
         res.json(result);
     })
 
-    app.get("/files/:fileId", (req, res) => {
+   /* app.get("/files/:fileId", (req, res) => {
 
         return driveInit().files.get(
             { fileId:req.params.fileId, alt: 'media' },
@@ -88,7 +112,7 @@ function init(client) {
             });
 
     })
-
+*/
 
 
     app.get('/', async ({ query }, response) => {
