@@ -31,7 +31,7 @@ async function getFolder(folderId, filesPackage, currentPath = '',  ) {
         });
         const files = response.data.files;
         for (const file of files) {
-            console.log( path.join(currentPath, file.name) )
+            //console.log( path.join(currentPath, file.name) )
             if (file.mimeType === 'application/vnd.google-apps.folder') {
                 await getFolder(file.id, filesPackage, path.join(currentPath, file.name));
             } else {
@@ -70,7 +70,7 @@ function init(client) {
             } else {
                 accessToken = tokens.access_token;
                 res.send(accessToken);
-                console.log(`access ${accessToken}`)
+                //console.log(`access ${accessToken}`)
 
             }
         });
