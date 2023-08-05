@@ -1,5 +1,4 @@
-const { Client, SlashCommandBuilder, CommandInteraction, PermissionFlagsBits, RoleManager, codeBlock} = require('discord.js');
-const mongoose = require('mongoose');
+const { CommandInteraction} = require('discord.js');
 const Player = require('../../Models/Player');
 const Discord = require('../../Models/Discord');
 
@@ -34,7 +33,7 @@ module.exports = { //User application command, sends ephemeral message to user w
                 embeds: [
                     {
                         "type": "rich",
-                        "title": `Your Statistics`,
+                        "title": `${player.battleTag} Statistics`,
                         "color": 49407,
                         "fields": [
                             {
