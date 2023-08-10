@@ -3,7 +3,10 @@ let Schema = mongoose.Schema;
 
 let PlayerSchema = new Schema({
     battleTag: String,
+    battleId: Number,
+    handles: Array,
     discordId: String,
+    discordName: String,
     isDonator: Boolean,
     isPrivate: Boolean,
     multiplier: Number,

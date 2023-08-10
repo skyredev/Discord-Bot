@@ -4,6 +4,12 @@ let Schema = mongoose.Schema;
 let GuildSchema = new Schema({
     id: String,
     name: String,
+    system: {
+        gamesLog: {
+            id: String,
+            name: String,
+        }
+    },
         patreon: {
             channel: {
                 id: String,
@@ -34,7 +40,8 @@ let GuildSchema = new Schema({
             verifyRole: {
                 id: String,
                 name: String,
-            }
+            },
+            aliasRoles: Array,
         },
         shop: {
             logChannel:{
@@ -54,7 +61,8 @@ let GuildSchema = new Schema({
                 name: String,
             },
             codePaths: Array,
-        }
+        },
+        authLinks: Array,
 });
 
 GuildSchema.index({id: 1}, {unique: true});

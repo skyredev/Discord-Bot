@@ -1,12 +1,12 @@
-const { request } = require('undici');
 const express = require('express');
-const { clientId, clientSecret, port, redirectUrl, discordUrl } = require('./tokens.json');
-const {verifyUser} = require('./Services/dataBaseServices');
-const {getUser} = require("./Services/dataBaseServices");
+const { port, redirectUrl, discordUrl, bnetId, bnetSecret } = require('./tokens.json');
+const {authUser} = require('./Services/dataBaseServices');
 const { google } = require('googleapis');
-const contentDisposition  = require('content-disposition');
 const path = require("path");
-
+const axios = require('axios');
+const Guilds = require('./Models/Guilds');
+const rateLimit = require("express-rate-limit");
+const asyncMiddleware = require('./Services/async');
 
 const keyFile = path.join(__dirname, 'service.json');
 const key = require(keyFile);
@@ -50,53 +50,97 @@ async function getFolder(folderId, filesPackage, currentPath = '',  ) {
 function init(client) {
 
     const app = express();
-    app.get('/ping', (req, res) => {
+
+    app.use((err, req, res, next) => {
+        if ( process.env.LOG_ERRORS_TO_CONSOLE) {
+            if( err.data )
+                console.error( err, err.stack, (err.data && err.data.error && err.data.error.description) );
+            else
+                console.error( err );
+        }
+        let errors = err.errors || ( err.data && err.data.errors )
+        if (!err) next()
+
+
+        //ErrorUtil.Raven().captureException(err, {req: req});
+        res.err = err;
+        res.status(err.status ||  err.statusCode || 500).format({
+            'application/json': () => {
+                res.json({error: err.message || ( err.data  && err.data.error && err.data.error.description ), errors })
+            },
+            default() {
+                res.send('Internal Server Error')
+            },
+        })
+    });
+
+
+    const limiter = rateLimit({
+        windowMs: 10 * 60 * 1000, // 10 minutes
+        max: 100, // limit each IP to 100 requests per windowMs
+        message: "Too many requests from this IP, please try again after 15 minutes."
+    });
+
+
+
+    app.use(limiter);
+/*    app.get('/ping', asyncMiddleware (async (req, res) => {
         res.send('pong')
-    })
+        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    }));*/
 
-    app.get('/token', (req, res) => {
-        const jwtClient = new google.auth.JWT(
-            key.client_email,
-            null,
-            key.private_key,
-            ['https://www.googleapis.com/auth/drive.readonly'],
-            null
-        );
-        jwtClient.authorize((err, tokens) => {
-            if (err) {
-                console.error("Error making request to generate access token:", err);
-            } else if (tokens.access_token === null) {
-                console.error("Provided service account does not have permission to generate access tokens");
-            } else {
-                accessToken = tokens.access_token;
-                res.send(accessToken);
-                //console.log(`access ${accessToken}`)
+    app.get('/token', asyncMiddleware (async (req, res) => {
+        try{
+            const jwtClient = new google.auth.JWT(
+                key.client_email,
+                null,
+                key.private_key,
+                ['https://www.googleapis.com/auth/drive.readonly'],
+                null
+            );
+            jwtClient.authorize((err, tokens) => {
+                if (err) {
+                    console.error("Error making request to generate access token:", err);
+                } else if (tokens.access_token === null) {
+                    console.error("Provided service account does not have permission to generate access tokens");
+                } else {
+                    accessToken = tokens.access_token;
+                    res.send(accessToken);
+                    //console.log(`access ${accessToken}`)
 
-            }
-        });
-
-    })
-    app.get('/files', async (req, res) => {
-
-        const result = [];
-
-        const gDrive = driveInit();
-
-        const response  = await gDrive.files.list({
-            q: `'${FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-            fields: 'files(id, name)',
-        });
-
-        const subfolders = response.data.files;
-
-        await Promise.all( subfolders.map( async subFolder => {
-            result.push({ name: subFolder.name ,totalSize: 0, files: [] })
-            await getFolder(subFolder.id, result[result.length - 1])
-        }))
+                }
+            });
+        }catch (e){
+            console.log(e)
+        }
 
 
-        res.json(result);
-    })
+    }))
+    app.get('/files', asyncMiddleware (async (req, res) => {
+        try {
+            const result = [];
+
+            const gDrive = driveInit();
+
+            const response  = await gDrive.files.list({
+                q: `'${FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                fields: 'files(id, name)',
+            });
+
+            const subfolders = response.data.files;
+
+            await Promise.all( subfolders.map( async subFolder => {
+                result.push({ name: subFolder.name ,totalSize: 0, files: [] })
+                await getFolder(subFolder.id, result[result.length - 1])
+            }))
+
+
+            res.json(result);
+        }catch (e){
+            console.log(e)
+        }
+
+    }))
 
    /* app.get("/files/:fileId", (req, res) => {
 
@@ -115,51 +159,99 @@ function init(client) {
 */
 
 
-    app.get('/', async ({ query }, response) => {
-        const { code } = query;
+    app.get('/auth', asyncMiddleware (async (req, res) => {
 
-        if (code) {
+        const query = req.query;
+        const authCode = query.code; // The authorization code from the request query
+        // The Discord member ID from the state parameter
+
+        if(authCode){
             try {
-                const tokenResponseData = await request('https://discord.com/api/oauth2/token', {
-                    method: 'POST',
-                    body: new URLSearchParams({
-                        client_id: clientId,
-                        client_secret: clientSecret,
-                        code,
-                        grant_type: 'authorization_code',
-                        redirect_uri: `${redirectUrl}`,
+                const guildState = JSON.parse(atob(query.state)).id;
+                const userId = JSON.parse(atob(query.state)).userId;
+                const userName = JSON.parse(atob(query.state)).userName;
+                const uuid = JSON.parse(atob(query.state)).uuid;
+
+                //console.log(guildState)
+                const guild = await Guilds.findOne({id: guildState});
+                if(guild){
+                    if(guild.authLinks.includes(uuid)) {
+                        return res.status(400).send('Session expired, please create a new one')
+                    }
+                }
+
+
+                //console.log(guild)
+                //console.log(userId)
+                //console.log(userName)
+
+
+                async function getAccessToken(clientId, clientSecret) {
+                    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+                    const response = await axios.post(`https://us.battle.net/oauth/token`,
+                        'grant_type=client_credentials',
+                    {
+                        headers: {
+                            'Authorization': `Basic ${auth}`,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    });
+
+                    if (response.status === 200) {
+                        return await response.data.access_token;
+                    } else {
+                        throw new Error(`Error: ${response.status}`);
+                    }
+                }
+
+
+
+                const apiToken = await getAccessToken(bnetId, bnetSecret)
+
+                const tokenResponse = await axios.post('https://eu.battle.net/oauth/token',
+                    new URLSearchParams({
+                        client_id: bnetId,
+                        client_secret: bnetSecret,
+                        redirect_uri: `${redirectUrl}/auth`,
+                        code: authCode,
+                        grant_type: 'authorization_code'
                     }).toString(),
+                {
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
                 });
+                const tokenData = tokenResponse.data;
+                //console.log(tokenData)
 
-                const oauthData = await tokenResponseData.body.json();
-                let userInfo = await request('https://discord.com/api/users/@me', {
+                // Use the access token to get the user's BattleTag
+                let userData = await axios.get('https://us.battle.net/oauth/userinfo', {
                     headers: {
-                        authorization: `${oauthData.token_type} ${oauthData.access_token}`,
-                    },
-                });
-                let connectionsInfo = await request('https://discord.com/api/users/@me/connections', {
-                    headers: {
-                        authorization: `${oauthData.token_type} ${oauthData.access_token}`,
-                    },
-                });
-                const guild = JSON.parse(atob(query.state)).id;
-                userInfo = await userInfo.body.json();
-                connectionsInfo = await connectionsInfo.body.json();
-                await getUser(userInfo, guild, client)
-                await verifyUser(userInfo, connectionsInfo, client, guild);
+                        'Authorization': `Bearer ${tokenData.access_token}`
+                    }
+                })
+                userData = await userData.data
+
+                //console.log(userData)
+                //console.log(userData.id)
+                //console.log(apiToken)
 
 
-            } catch (error) {
-                console.error(error);
-                return (response.send(error.stack))
+
+
+                void authUser(userData.battletag, userData.id, userId, userName, apiToken ,client, guildState);
+                //console.log(`BattleTag: ${userData.battletag}, battleId: ${userData.id}, Discord Name: ${userName}  ,Discord Member ID: ${userId}`);
+
+                return (res.redirect(`${discordUrl}`)); // Redirect to your server / Hardcoded link to one exact server
             }
-        }
+            catch (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Internal Server Error' });
+            }
 
-        return (response.redirect(`${discordUrl}`)); // Redirect to your server / Hardcoded link to one exact server
-    });
+        }
+    }));
     app.listen(port, () => console.log(`App listening at ${redirectUrl}`));
 }
 

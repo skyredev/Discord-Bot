@@ -26,7 +26,7 @@ client
         loadEvents(client);
         loadCommands(client);
 
-        server(client); //Runs express server for verification redirect_url
+        server(client); //Runs express server
 
     })
     .catch(console.error);

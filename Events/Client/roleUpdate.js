@@ -1,6 +1,5 @@
 const { Client } = require('discord.js');
 const Player = require('../../Models/Player');
-const Discord = require('../../Models/Discord');
 const Guilds = require('../../Models/Guilds');
 
 module.exports = {
@@ -12,42 +11,43 @@ module.exports = {
      * @param { GuildMember } oldMember
      * @param { GuildMember } newMember
      */
-    async execute(oldMember, newMember, client ){ // Checks if the user has the donator role and if they do, it adds the donator role to the database
-        try{
-            const guildDB = await Guilds.findOne({id: newMember.guild.id});
-            const guild = newMember.guild;
+    async execute(oldMember, newMember, client) {
+        try {
+            const guildDB = await Guilds.findOne({ id: newMember.guild.id });
             const role = guildDB.verify.donatorRole.id;
-            const user = await Discord.findOne({id: newMember.id});
-            const player = await Player.findOne({battleTag: user.battleTag});
-
-            if ((oldMember.roles.cache.size > newMember.roles.cache.size) || (oldMember.roles.cache.size < newMember.roles.cache.size)) {
-                if(newMember.roles.cache.has(role)){
-                    if(user){
-                        user.isDonator = true;
-                        await user.save();
-                    }
-                    if(player){
-                        player.isDonator = true;
-                        await player.save();
-                    }
+            const aliasRoles = guildDB.verify.aliasRoles;
+            const player = await Player.findOne({ discordId: newMember.id });
 
 
-                }
-                else{
-                    if(user){
-                        user.isDonator = false;
-                        await user.save();
-                    }
-                    if(player){
+            // Проверка наличия или отсутствия роли
+            const hasDonatorRole = newMember.roles.cache.has(role);
+            const hadDonatorRole = oldMember.roles.cache.has(role);
+            const hasAnyAliasRole = aliasRoles.some(r => newMember.roles.cache.has(r));
+
+            if (hasDonatorRole && player) {
+                player.isDonator = true;
+                await player.save();
+
+            } else if (hasAnyAliasRole && !hadDonatorRole) {
+                await newMember.roles.add(role);
+                console.log('add')
+            }
+            if(newMember.roles.cache.size < oldMember.roles.cache.size) {
+                if (!hasAnyAliasRole) {
+                    await newMember.roles.remove(role);
+                    console.log('remove')
+                    if(player) {
                         player.isDonator = false;
                         await player.save();
                     }
                 }
-
             }
-        }catch (e) {
+            // Если у участника нет роли спонсора и ни одной из alias ролей
+
+
+
+        } catch (e) {
+            console.error("Ошибка при обновлении роли: ", e);
         }
-
-
     }
 }

@@ -1,12 +1,16 @@
 const { SlashCommandBuilder, CommandInteraction, PermissionFlagsBits, codeBlock} = require('discord.js');
-const { ip, port, clientId } = require('../../tokens.json');
+const { bnetId, redirectUrl } = require('../../tokens.json');
+const { v4: uuidv4 } = require('uuid');
+const {qname} = require("jsdom/lib/jsdom/living/helpers/validate-names");
+const Guilds = require('../../Models/Guilds');
+const {content} = require("googleapis/build/src/apis/content");
 
 module.exports = { // Creates message with the link button for verification, the link uses discord OAuth2 to get the user's identity and 3rd party connections (Battle.net) then uses server side verification to verify the user
-    name: 'verify',
+    name: 'authorize',
     disabled:false,
     data: new SlashCommandBuilder()
-        .setName('verify')
-        .setDescription('Verification create!')
+        .setName('authorize')
+        .setDescription('Authorization create!')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .setDMPermission(false)
     ,
@@ -18,9 +22,7 @@ module.exports = { // Creates message with the link button for verification, the
 
     async execute(interaction) {
         const member = interaction.member
-        let guild = { "id": `${interaction.guild.id}`, "member": `${member}`
-        }
-        guild = btoa((JSON.stringify(guild)));
+
         return interaction.reply({
             "content": "",
             "tts": false,
@@ -29,9 +31,9 @@ module.exports = { // Creates message with the link button for verification, the
                     "type": 1,
                     "components": [
                         {
-                            "style": 5,
-                            "label": `VERIFY`,
-                            "url" : `https://discord.com/api/oauth2/authorize?client_id=${clientId}&state=${guild}&redirect_uri=http%3A%2F%2F${ip}%3A${port}&response_type=code&scope=identify%20connections`,
+                            "style": 3,
+                            "label": `Join game tracking`,
+                            customId: `bnetauth`,
                             "disabled": false,
                             "type": 2
                         },
@@ -41,14 +43,70 @@ module.exports = { // Creates message with the link button for verification, the
             "embeds": [
                 {
                     "type": "rich",
-                    "title": `Verification`,
-                    "description": `Verify you BNet to get full access to statistics and your profile\n Click on the button below to verify your account 
-                    \n*Please note that you will need to have your BNet account connected to your Discord account and connection must be public*`,
+                    "title": `Game statistics tracking & reward system`,
+                    "description": `Authorize with your Battle.net to earn rewards after games you played and track your statistics\n Click on the button below to authorize your account
+                    \n**Please note that if you create new Starcraft II game profile on other region you will need to reauthorize your account**\n`,
                     "color": 0x6fff00
                 }
             ]
             , ephemeral: false});
 
     },
+    async executeButton(interaction) {
+        const member = interaction.member
+        const guild = await Guilds.findOne({id: interaction.guild.id});
+        const uuid = uuidv4();
+        console.log(uuid);
+        let state = { "id": `${interaction.guild.id}`, "userName": `${member.user.username}`, "userId": `${member.user.id}`, "uuid": `${uuid}`
+        }
+        state = btoa((JSON.stringify(state)));
+
+        // autoexpire link after 5 minutes
+
+
+        const oauthURL = `https://oauth.battle.net/oauth/authorize?response_type=code&client_id=${bnetId}&redirect_uri=${redirectUrl}/auth&scope=sc2.profile&state=${state}`;
+
+        // Embed the OAuth URL into the Battle.net login URL using the ref parameter
+        const loginURL = `https://account.battle.net/login/en/?ref=${encodeURIComponent(oauthURL)}&app=oauth`;
+
+        interaction.reply({
+            "content": "",
+            "tts": false,
+            "components": [
+                {
+                    "type": 1,
+                    "components": [
+                        {
+                            "style": 5,
+                            "label": `AUTHORIZE`,
+                            "url": loginURL,
+                            "disabled": false,
+                            "type": 2
+                        },
+                    ]
+                }
+            ],
+            "embeds": [
+                {
+                    "type": "rich",
+                    "title": `Your Authorization session`,
+                    "description": `Here is your authorization session\n
+                    Please click on the button below to authorize your account\n
+                    \n**Authorization occurs on official Blizzard Entertainment website account.battle.net and is completely safe, we will not store any of your sensitive information or have access to your password or any other personal information**\n
+                    \n*Resurgence of the Storm is not affiliated with Blizzard Entertainment, Inc. in any way*`,
+                    "color": 0x6fff00
+                }
+            ]
+            , ephemeral: true});
+
+        return setTimeout(async () => {
+            if(guild.authLinks.includes(uuid)){
+                return;
+            }
+            console.log(`adding ${uuid} to ${interaction.guild.id}`)
+            guild.authLinks.push(uuid);
+            await guild.save();
+        }, 1000 * 60 * 10); // 5 minutes
+    }
 
 }

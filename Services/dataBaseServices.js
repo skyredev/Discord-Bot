@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 const Game = require('../Models/Game');
 const Player = require('../Models/Player');
 const tokens = require("../tokens.json");
-const Discord = require("../Models/Discord");
 const Guilds = require('../Models/Guilds');
 const {patreon} = require("patreon");
+const axios = require("axios");
 
 
 mongoose.connect(tokens.database);
 
 
-async function requestGameData(gameId, regionId, serverId, gameLink, gameMode, players, completedAt, closedAt, hostName, message){
+async function requestGameData(gameId, regionId, serverId, gameLink, gameMode, players, completedAt, closedAt, hostName, client, guildId){
         let region = null;
         if(regionId === '1'){
             region = 'US'
@@ -52,10 +52,10 @@ async function requestGameData(gameId, regionId, serverId, gameLink, gameMode, p
             gameLink: gameLink,
         }
         await postGameData(gameData)
-        await postGameReslts(gameData, message)
+        await postGameReslts(gameData, client, guildId)
         for(let i = 0; i < players.players.length; i++){
             const player = players.players[i];
-            await playerData(player.battleTag, player.decision, gameData);
+            await playerData(player.link, player.decision, gameData);
         }
 
         await calculateMultiplier(gameData.players);
@@ -64,9 +64,15 @@ async function requestGameData(gameId, regionId, serverId, gameLink, gameMode, p
 
 }
 
-async function playerData(battleTag, decision, gameData){
+async function playerData(link, decision, gameData){
 
-    let player = await Player.findOne({battleTag : battleTag});//find player in database
+    let player = await Player.findOne({
+        handles: {
+            $elemMatch: {
+                profileUrl: link
+            }
+        }
+    });//find player in database
 
     let win = 0;
     let loss = 0;
@@ -81,19 +87,10 @@ async function playerData(battleTag, decision, gameData){
 
 
     try{
-        const user = await Discord.findOne({battleTag: battleTag})
-        let isDonator = false;
-        let discordId = null;
-        if(user){
-            discordId = user.id;
-            isDonator = user.isDonator
-        }
 
         if(player){
             player.region.id = gameData.region.id;
             player.region.name = gameData.region.name;
-            player.discordId = discordId;
-            player.isDonator = isDonator;
             player.stats.losses += loss;
             player.stats.wins += win;
             player.stats.games += 1;
@@ -106,33 +103,6 @@ async function playerData(battleTag, decision, gameData){
             await player.save();
 
         }
-        else {
-            const newPlayer = new Player({
-                battleTag: battleTag,
-                discordId: discordId,
-                isDonator: isDonator,
-                isPrivate: false,
-                crystals: 0,
-                multiplier: 1,
-                region:{
-                    id: gameData.region.id,
-                    name: gameData.region.name,
-                },
-                games: [gameData],
-                stats: {
-                    games: 1,
-                    wins: win,
-                    losses: loss,
-                    winRate: win*100,
-                    timePlayed: gameData.time.duration,
-                    timePlayedPerGame: gameData.time.duration,
-                    MMR: 1000,
-                    rank: 'Unranked',
-                }
-            })
-            await newPlayer.save();
-        }
-
 
 
     }
@@ -162,10 +132,12 @@ async function postGameData(gameData){
     await game.save()
 }
 
-async function postGameReslts(gameData, message) {
+async function postGameReslts(gameData, client, guildId) {
+    const server = client.guilds.cache.get(guildId);
+    const guildDb = await Guilds.findOne({id: guildId})
+    const channel = server.channels.cache.get(guildDb.system.gamesLog.id);
 
-
-    message.reply({
+    channel.send({
         embeds: [
             {
                 "type": "rich",
@@ -202,8 +174,8 @@ async function postGameReslts(gameData, message) {
                     },
                     {
                         "name": "Players",
-                        "value": `${gameData.players.map(player => player.battleTag)} - ${gameData.players.map(player => player.decision.toUpperCase())}`,
-                        "inline": true
+                        "value": `${gameData.players.map(player => player.name)} - ${gameData.players.map(player => player.decision.toUpperCase())}`,
+                        "inline": false
                     },
                 ]
             }
@@ -274,6 +246,14 @@ async function createGuild(guild){
         }
         else {
             // update not existed fields
+            if(!find.system){
+                find.system = {
+                    gamesLog:{
+                        id: null,
+                        name: null,
+                    }
+                }
+            }
             if(!find.patreon){
                 find.patreon = {
                     channel: {
@@ -337,6 +317,9 @@ async function createGuild(guild){
                     codePaths: [],
                 }
             }
+            if(!find.authLinks){
+                find.authLinks = []
+            }
             console.log("updated guild")
             await find.save();
         }
@@ -347,106 +330,159 @@ async function createGuild(guild){
 
 }
 
-async function verifyUser(userInfo, connectionsInfo, client, guild){
+async function authUser(battleTag, battleId, discordId, discordName , apiToken ,client, guild){
     try {
         const server = client.guilds.cache.get(guild);
+        const member =  await server.members.fetch(discordId);
+        let handles = null;
+        let maxAttempts = 999;
+        let attempts = 0;
 
-        const guildDb = await Guilds.findOne({id: guild})
-        const user = await Discord.findOne({id: userInfo.id});
-        const BNet = connectionsInfo.find(connection => connection.type === 'battlenet');
+        while (!handles && attempts < maxAttempts) {
+            attempts++;
 
-        const member =  await server.members.fetch(userInfo.id);
-        const channel = server.channels.cache.get(guildDb.verify.logChannel.id);
+            try {
+                handles = await axios.get(`https://eu.api.blizzard.com/sc2/player/${battleId}`, {
+                    params: {
+                        'access_token': `${apiToken}`
+                    }
+                });
+                //console.log("eu");
+            } catch (e) {
+                //console.log("Error on EU:", e.message);
 
+                try {
+                    handles = await axios.get(`https://us.api.blizzard.com/sc2/player/${battleId}`, {
+                        params: {
+                            'access_token': `${apiToken}`
+                        }
+                    });
+                    //console.log("us");
+                } catch (e) {
+                    //console.log("Error on US:", e.message);
 
-
-        if (BNet) {
-            const BNetMatch = await Discord.findOne({battleTag: BNet.id});
-            if (BNetMatch) {
-                console.log('BNet already exists')
-                await member.send({content: `❌ This BNet - [${BNet.id}] has already been verified on [${guildDb.name}] server!`});
-            }
-            else {
-                if (user.verified === true) {
-                    console.log('User already verified')
-                    await member.send({content: `❌ You are already verified on [${guildDb.name}] server!`});
-
-
-                } else {
-                    const verifyrole = guildDb.verify.verifyRole.id;
-                    const player = await Player.findOne({battleTag: BNet.id});
-                    if (player) {
-                        player.discordId = userInfo.id;
-                        player.isDonator = user.isDonator;
-                        await player.save();
-                    } else {
-
-
-                        const newPlayer = new Player({
-                            battleTag: BNet.id,
-                            discordId: userInfo.id,
-                            isDonator: user.isDonator,
-                            isPrivate: false,
-                            multiplier: 1,
-                            crystals: 0,
-                            region: {
-                                id: null,
-                                name: null,
-                            },
-                            games: [],
-                            stats: {
-                                games: 0,
-                                wins: 0,
-                                losses: 0,
-                                winRate: 0,
-                                timePlayed: 0,
-                                timePlayedPerGame: 0,
-                                MMR: 1000,
-                                rank: '',
+                    try {
+                        handles = await axios.get(`https://kr.api.blizzard.com/sc2/player/${battleId}`, {
+                            params: {
+                                'access_token': `${apiToken}`
                             }
-                        })
-                        await newPlayer.save();
-                    }
-                    user.verified = true;
-                    user.battleTag = BNet.id;
-                    await user.save();
-
-                    try {
-                        await member.send({content: `✅ BNet account - [${BNet.id}] has been verified on [${guildDb.name}] server!`});
-
-                    } catch (e) {
-                        console.log(e)
-                    }
-
-                    await member.roles.add(verifyrole);
-
-                    try {
-                        channel.send({
-                            "content": "",
-                            "tts": false,
-                            "embeds": [
-                                {
-                                    "type": "rich",
-                                    "title": `Verification`,
-                                    "description": `User - [<@${userInfo.id}>] has been verified! \n BattleTag: ${BNet.id} \n Discord ID: ${userInfo.id}`,
-                                    "timestamp": new Date(),
-                                    "color": 0x6fff00
-                                }
-                            ]
                         });
+                        //console.log("kr");
                     } catch (e) {
-                        console.log(e)
+                        //console.log("Error on KR:", e.message);
                     }
                 }
             }
 
+            // Sleep for 4 seconds before the next attempt
+            if (!handles) {
+                await new Promise(res => setTimeout(res, 4000));
+            }
+        }
+
+// If after all attempts, handles is still not set.
+        if (!handles) {
+            await member.send({content: `❌ Failed to get data after multiple attempts. Blizzard Error 404. Please try to authorize again.`});
+            console.log("Failed to get data after multiple attempts.");
+        }
+        //console.log(JSON.stringify(handles.data, null, 2));
 
 
-        } else {
-            console.log('Non BNet account')
-            await member.send({content: `❌ BNet is not linked to your discord account!`});
+        const guildDb = await Guilds.findOne({id: guild})
+        //console.log(discordId)
+        //console.log(battleTag)
+        const player = await Player.findOne({battleTag: battleTag});
+
+
+        const channel = server.channels.cache.get(guildDb.verify.logChannel.id);
+
+
+
+
+
+        if (battleTag) {
+            if(player){
+                if (player.battleTag === battleTag && player.handles.length === handles.data.length) {
+                    console.log('BNet already exists')
+                    await member.send({content: `❌ This BNet - [${battleTag}] has already been authorized on [${guildDb.name}] server!`});
+                }
+                else if (player.battleTag === battleTag) {
+                    console.log(`Bnet already exists but handles are different`)
+                    player.handles = handles.data;
+                    await player.save();
+                    await member.send({content: `New profiles have been detected for - [${battleTag}] on [${guildDb.name}]. Successfully added!`});
+                }
+            }
+
+            else {
+                const newPlayer = new Player({
+                    battleTag: battleTag,
+                    battleId: battleId,
+                    handles: handles.data,
+                    discordId: discordId,
+                    discordName: discordName,
+                    isDonator: false,
+                    isPrivate: false,
+                    multiplier: 1,
+                    crystals: 0,
+                    region: {
+                        id: null,
+                        name: null,
+                    },
+                    games: [],
+                    stats: {
+                        games: 0,
+                        wins: 0,
+                        losses: 0,
+                        winRate: 0,
+                        timePlayed: 0,
+                        timePlayedPerGame: 0,
+                        MMR: 1000,
+                        rank: '',
+                    }
+                })
+
+                if(member.roles.cache.has(guildDb.verify.donatorRole.id || guildDb.verify.aliasRoles.some(role => member.roles.cache.has(role.id)))) {
+                    newPlayer.isDonator = true;
+                }
+                await newPlayer.save();
+
+                try {
+                    await member.send({content: `✅ BNet account - [${battleTag}] has been verified on [${guildDb.name}] server!`});
+                } catch (e) {
+                    console.log(e)
+                }
+
+                try {
+                    channel.send({
+                        "content": "",
+                        "tts": false,
+                        "embeds": [
+                            {
+                                "type": "rich",
+                                "title": `Verification`,
+                                "description": `User - [<@${discordId}>] has been verified! \n BattleTag: ${battleTag} \n Discord ID: ${discordId}`,
+                                "timestamp": new Date(),
+                                "color": 0x6fff00
+                            }
+                        ]
+                    });
+                } catch (e) {
+                    console.log(e)
+                }
+
+
+            }
 
         }
+
+        else {
+            console.log('Non BNet account')
+            await member.send({content: `❌ Blizzard API occurred, please contact <@428827555878010881>!`});
+    }
+
+
+
 
 
 
@@ -455,34 +491,6 @@ async function verifyUser(userInfo, connectionsInfo, client, guild){
     }
 }
 
-async function getUser(userInfo, guildId, client){
-    try {
-        const user = await Discord.findOne({id: userInfo.id});
-        if (user === null) {
-            const server = client.guilds.cache.get(guildId);
-            const guild = await Guilds.findOne({id: guildId});
-            const member =  await server.members.fetch(userInfo.id);
-
-            let isDonator = false;
-            if (member.roles.cache.has(guild.verify.donatorRole.id)) {
-                isDonator = true;
-            }
-
-            const newUser = new Discord({
-                name: `${userInfo.username}#${userInfo.discriminator}`,
-                id: userInfo.id,
-                isDonator: isDonator,
-                isPrivate: false,
-                verified: false,
-                battleTag: null,
-            });
-            await newUser.save();
-        }
-
-    }catch (e) {
-    }
-
-}
 
 
 async function calculateMMR(players) {
@@ -745,6 +753,6 @@ async function calculateRank(players){
 
 
 
-module.exports = {requestGameData, createGuild, verifyUser, getUser, purchases, codeCreated}
+module.exports = {requestGameData, createGuild, authUser, purchases, codeCreated}
 
 

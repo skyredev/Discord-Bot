@@ -3,6 +3,7 @@ let Buttons = { // Buttons custom_id's and their application commands references
     "na": "roles",
     "kr": "roles",
     "clean": "roles",
+    "bnetauth": "authorize",
 }
 
 module.exports = {Buttons};

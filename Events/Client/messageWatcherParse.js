@@ -40,22 +40,22 @@ module.exports = {
                         const decision = matchProfile.decision;
 
                         const profileID = matchProfile.profile.profileId;
+                        const profileRegionId = matchProfile.profile.regionId;
                         const realmID = matchProfile.profile.realmId;
+                        const profileLink = `https://www.starcraft2.com/profile/${profileRegionId}/${realmID}/${profileID}`
 
-                        const response = await request(`https://sc2arcade.com/api/profiles/${regionId}/${realmID}/${profileID}`);
-                        const profileData = await getJSONResponse(response.body);
-                        const battleTag = profileData.battleTag;
-
-                        console.log(`slot ${i} is ${battleTag}`)
+                        console.log(`slot ${i} is ${profileLink}`)
 
                         gamePlayers.players.push({
-                            battleTag: battleTag,
+                            name: matchProfile.profile.name,
+                            link: profileLink,
                             decision: decision
                         })
 
                     }
+                    const guildId = message.guild.id;
 
-                    await requestGameData(gameId, regionId, serverId, gameLink, lobbyData.mapVariantMode, gamePlayers, endData.completedAt, lobbyData.closedAt, lobbyData.hostName, message)
+                    await requestGameData(gameId, regionId, serverId, gameLink, lobbyData.mapVariantMode, gamePlayers, endData.completedAt, lobbyData.closedAt, lobbyData.hostName, client, guildId)
 
                     //message.channel.send({content: `Game Finished\nGame ID: ${gameId} \nRegion ID: ${regionId} \nServer ID: ${serverId} \nGame Mode: ${lobbyData.mapVariantMode}\nPlayers:\n${gamePlayers.players.map(player => `${player.battleTag} - ${player.decision.toUpperCase()}`).join('\n')}\nGame Link: ${gameLink}\nCompleted at: ${endData.completedAt}`})
 

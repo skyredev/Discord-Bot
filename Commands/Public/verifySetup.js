@@ -47,6 +47,19 @@ module.exports = { // Setup for the verification
                     }
                 ]
             },
+            {
+                "type": 1,
+                "name": "aliasroles",
+                "description": "Set alias roles!",
+                "options": [
+                    {
+                        "type": 3,
+                        "name": "aliasroles",
+                        "description": "Set alias roles!",
+                        "required": true,
+                    }
+                ]
+            },
 
         ],
         default_member_permissions: 8,
@@ -89,6 +102,18 @@ module.exports = { // Setup for the verification
             await guild.save();
             interaction.reply({content: `Verify role set to #${role.name}`, ephemeral: true});
         }
+        if(interaction.options.getSubcommand() === 'aliasroles') {
+            const roles = interaction.options.getString('aliasroles')?.split(',').map((role) => role.trim());
+            console.log(roles)
+            const guild = await Guilds.findOne({id: interaction.guild.id});
+
+            guild.verify.aliasRoles = roles;
+            await guild.save();
+            interaction.reply({content: `Alias roles added`, ephemeral: true});
+        }
+
+
+
     }
 
 
