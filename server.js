@@ -18,6 +18,7 @@ const auth = new google.auth.GoogleAuth({
 
 
 const FOLDER_ID = '120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt';
+const FOLDER_PATCHER = '1aFyXPlDKqp7Zo6Lnn9VxNVOxFE9mOkLI';
 function driveInit() {
     return google.drive({ version: 'v3', auth});
 }
@@ -34,9 +35,14 @@ async function getFolder(folderId, filesPackage, currentPath = '',  ) {
             //console.log( path.join(currentPath, file.name) )
             if (file.mimeType === 'application/vnd.google-apps.folder') {
                 await getFolder(file.id, filesPackage, path.join(currentPath, file.name));
+                //check if subfolder name is
+
+
+
             } else {
                 // If the local file doesn't exist, or the MD5 checksums don't match, then add the file size to totalSize
                 filesPackage.totalSize += parseInt(file.size);
+
                 filesPackage.files.push({ name: file.name, size: parseInt(file.size), id: file.id, path: path.join(currentPath, file.name), md5Checksum:file.md5Checksum });
             }
 
@@ -139,6 +145,21 @@ function init(client) {
         }catch (e){
             console.log(e)
         }
+
+    }))
+    app.get('/patcher', asyncMiddleware (async (req, res) => {
+        const gDrive = driveInit();
+
+        const response = await driveInit().files.list({
+            q: `'${FOLDER_PATCHER}' in parents and trashed=false`,
+            fields: 'files(id, name, mimeType, size, md5Checksum)',
+        });
+
+        const result =  response.data.files.map( file => {
+            return { name: file.name, id: file.id, size: file.size ,md5Checksum: file.md5Checksum }
+        })
+
+        res.json(result);
 
     }))
 
