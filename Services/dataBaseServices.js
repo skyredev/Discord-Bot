@@ -449,6 +449,7 @@ async function authUser(battleTag, battleId, discordId, discordName , apiToken ,
 
                 try {
                     await member.send({content: `✅ BNet account - [${battleTag}] has been verified on [${guildDb.name}] server!`});
+                    await member.roles.add(guildDb.verify.verifyRole.id);
                 } catch (e) {
                     console.log(e)
                 }
@@ -559,9 +560,15 @@ async function calculateMMR(players) {
             const amount = 10;
 
             for (let i = 0; i < players.length; i++) {
-                const player = players[i];
-                const dbPlayer = await Player.findOne({battleTag: player.battleTag});
-                if(player.decision === 'win') dbPlayer.stats.MMR = dbPlayer.stats.MMR + amount;
+                const dbPlayer = await Player.findOne({
+                    handles: {
+                        $elemMatch: {
+                            profileUrl: players[i].link
+                        }
+                    }
+                });
+                if(!dbPlayer) continue;
+                if(players[i].decision === 'win') dbPlayer.stats.MMR = dbPlayer.stats.MMR + amount;
                 else dbPlayer.stats.MMR = dbPlayer.stats.MMR - amount;
                 await dbPlayer.save();
             }
@@ -574,10 +581,15 @@ async function calculateMMR(players) {
 
 async function calculateMultiplier(players){
         try{
-
             for (let i = 0; i < players.length; i++) {
-                const player = players[i];
-                const dbPlayer = await Player.findOne({battleTag: player.battleTag});
+                const dbPlayer = await Player.findOne({
+                    handles: {
+                        $elemMatch: {
+                            profileUrl: players[i].link
+                        }
+                    }
+                });
+                if(!dbPlayer) continue;
                 if(dbPlayer.isDonator===true){
                     dbPlayer.multiplier = 1.5;
                 }else{
@@ -595,10 +607,16 @@ async function calculateCrystals(players){
         try {
             const amount = 1;
             for (let i = 0; i < players.length; i++) {
-                const player = players[i];
-                const dbPlayer = await Player.findOne({battleTag: player.battleTag});
+                const dbPlayer = await Player.findOne({
+                    handles: {
+                        $elemMatch: {
+                            profileUrl: players[i].link
+                        }
+                    }
+                });
+                if(!dbPlayer) continue;
                 let decisionMultiplier = 1;
-                if(player.decision === 'win') {
+                if(players[i].decision === 'win') {
                     decisionMultiplier = 1.5;
                 }
                 dbPlayer.crystals += amount * players.length * decisionMultiplier * dbPlayer.multiplier;
