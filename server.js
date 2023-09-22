@@ -19,6 +19,7 @@ const auth = new google.auth.GoogleAuth({
 
 const FOLDER_ID = '120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt';
 const FOLDER_PATCHER = '1aFyXPlDKqp7Zo6Lnn9VxNVOxFE9mOkLI';
+const version = require('./package.json').version;
 function driveInit() {
     return google.drive({ version: 'v3', auth});
 }
@@ -148,7 +149,6 @@ function init(client) {
 
     }))
     app.get('/patcher', asyncMiddleware (async (req, res) => {
-        const gDrive = driveInit();
 
         const response = await driveInit().files.list({
             q: `'${FOLDER_PATCHER}' in parents and trashed=false`,
@@ -156,7 +156,7 @@ function init(client) {
         });
 
         const result =  response.data.files.map( file => {
-            return { name: file.name, id: file.id, size: file.size ,md5Checksum: file.md5Checksum }
+            return { name: file.name, id: file.id, size: file.size ,md5Checksum: file.md5Checksum, version: version }
         })
 
         res.json(result);

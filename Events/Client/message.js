@@ -4,6 +4,7 @@ const {getJSONResponse} = require("../../Services/requestServices");
 
 module.exports = {
     name: 'messageCreate',
+    disabled: true,
     once: false,
     rest:false,
     /**
