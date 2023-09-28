@@ -447,9 +447,9 @@ async function authUser(battleTag, battleId, discordId, discordName , apiToken ,
                 }
                 await newPlayer.save();
 
+                await member.roles.add(guildDb.verify.verifyRole.id);
                 try {
                     await member.send({content: `✅ BNet account - [${battleTag}] has been verified on [${guildDb.name}] server!`});
-                    await member.roles.add(guildDb.verify.verifyRole.id);
                 } catch (e) {
                     console.log(e)
                 }
