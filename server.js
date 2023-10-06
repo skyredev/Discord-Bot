@@ -229,6 +229,7 @@ function init(client) {
 
 
                 const apiToken = await getAccessToken(bnetId, bnetSecret)
+                console.log(apiToken)
 
                 const tokenResponse = await axios.post('https://eu.battle.net/oauth/token',
                     new URLSearchParams({

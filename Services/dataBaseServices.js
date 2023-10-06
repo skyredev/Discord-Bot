@@ -334,70 +334,26 @@ async function authUser(battleTag, battleId, discordId, discordName , apiToken ,
     try {
         const server = client.guilds.cache.get(guild);
         const member =  await server.members.fetch(discordId);
-        let handles = null;
-        let maxAttempts = 999;
-        let attempts = 0;
 
-        while (!handles && attempts < maxAttempts) {
-            attempts++;
-
-            try {
-                handles = await axios.get(`https://eu.api.blizzard.com/sc2/player/${battleId}`, {
-                    params: {
-                        'access_token': `${apiToken}`
-                    }
-                });
-                //console.log("eu");
-            } catch (e) {
-                //console.log("Error on EU:", e.message);
-
-                try {
-                    handles = await axios.get(`https://us.api.blizzard.com/sc2/player/${battleId}`, {
-                        params: {
-                            'access_token': `${apiToken}`
-                        }
-                    });
-                    //console.log("us");
-                } catch (e) {
-                    //console.log("Error on US:", e.message);
-
-                    try {
-                        handles = await axios.get(`https://kr.api.blizzard.com/sc2/player/${battleId}`, {
-                            params: {
-                                'access_token': `${apiToken}`
-                            }
-                        });
-                        //console.log("kr");
-                    } catch (e) {
-                        //console.log("Error on KR:", e.message);
-                    }
-                }
+        const handles = await axios.get(`https://starcraft2.blizzard.com/en-us/api/sc2/player/${battleId}`, {
+            params: {
+                'access_token': `${apiToken}`
             }
+        });
 
-            // Sleep for 4 seconds before the next attempt
-            if (!handles) {
-                await new Promise(res => setTimeout(res, 4000));
-            }
-        }
 
-// If after all attempts, handles is still not set.
         if (!handles) {
             await member.send({content: `❌ Failed to get data after multiple attempts. Blizzard Error 404. Please try to authorize again.`});
             console.log("Failed to get data after multiple attempts.");
         }
-        //console.log(JSON.stringify(handles.data, null, 2));
+
 
 
         const guildDb = await Guilds.findOne({id: guild})
-        //console.log(discordId)
-        //console.log(battleTag)
         const player = await Player.findOne({battleTag: battleTag});
 
 
         const channel = server.channels.cache.get(guildDb.verify.logChannel.id);
-
-
-
 
 
         if (battleTag) {
@@ -447,8 +403,9 @@ async function authUser(battleTag, battleId, discordId, discordName , apiToken ,
                 }
                 await newPlayer.save();
 
-                await member.roles.add(guildDb.verify.verifyRole.id);
+
                 try {
+                    await member.roles.add(guildDb.verify.verifyRole.id);
                     await member.send({content: `✅ BNet account - [${battleTag}] has been verified on [${guildDb.name}] server!`});
                 } catch (e) {
                     console.log(e)
