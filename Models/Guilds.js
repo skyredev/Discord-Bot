@@ -63,6 +63,26 @@ let GuildSchema = new Schema({
             codePaths: Array,
         },
         authLinks: Array,
+        testing: {
+            logChannel:{
+                id: String,
+                name: String,
+            },
+            channel: {
+                id: String,
+                name: String,
+            },
+            testersChannel: {
+                id: String,
+                name: String,
+            },
+            testingRole: {
+                id: String,
+                name: String,
+            },
+            waves: Array,
+            cleaning: Array,
+        }
 });
 
 GuildSchema.index({id: 1}, {unique: true});

@@ -16,6 +16,21 @@ module.exports = {
             if(interaction.customId.startsWith('shop_')){
                 command = client.commands.get('shop');
             }
+            else if(interaction.customId.startsWith('testing_')){
+                command = client.commands.get('testing');
+            }
+            else if(interaction.customId.startsWith('accept_')){
+                command = client.commands.get('testing');
+            }
+            else if(interaction.customId.startsWith('reject_')){
+                command = client.commands.get('testing');
+            }
+            else if(interaction.customId.startsWith('cleaning')){
+                command = client.commands.get('testing');
+            }
+            else if(interaction.customId.startsWith('warning')){
+                command = client.commands.get('testing');
+            }
         }
 
 
@@ -26,6 +41,21 @@ module.exports = {
                     let {executeButton} = require(`${Buttons[interaction.customId]}`);
                     if(interaction.customId.startsWith('shop_')){
                         executeButton = require(`shop`);
+                    }
+                    else if(interaction.customId.startsWith('testing_')){
+                        executeButton = require(`testing`);
+                    }
+                    else if(interaction.customId.startsWith('accept_')){
+                        executeButton = require(`testing`);
+                    }
+                    else if(interaction.customId.startsWith('reject_')){
+                        executeButton = require(`testing`);
+                    }
+                    else if(interaction.customId.startsWith('cleaning')){
+                        executeButton = require(`testing`);
+                    }
+                    else if(interaction.customId.startsWith('warning')){
+                        executeButton = require(`testing`);
                     }
                     return await executeButton(interaction, client, interaction.customId);
                 }else {

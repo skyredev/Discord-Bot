@@ -187,6 +187,7 @@ module.exports = { // The shop, where users can by any items you created, includ
 
 
                 const guild = await Guilds.findOne({id: interaction.guild.id});
+                if(guild.shop.items.find(item => item.id === id)) return interaction.reply({content: `Item with this ID already exists`, ephemeral: true}); //return if item already exists
                 if (guild.shop.channel.id) {
                     let channel = interaction.guild.channels.cache.get(guild.shop.channel.id)
                     const tags = []
