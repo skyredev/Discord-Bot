@@ -246,7 +246,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 await guild.save();
 
                     // Create and send embed message
-                await sendEmbedMessage(interaction, playersToNotify);
+                await sendEmbedMessage(interaction, playersToNotify, skip);
                 }
 
             async function sortTestersByActivity(testers) {
@@ -277,12 +277,12 @@ module.exports = { // The shop, where users can by any items you created, includ
                 return testersWithStats;
             }
 
-            async function sendEmbedMessage(interaction, players) {
+            async function sendEmbedMessage(interaction, players, skip) {
                 await interaction.channel.send({
                     embeds: [
                         {
                             type: 'rich',
-                            title: `Inactive testers`,
+                            title: skip ? `Inactive testers (skipped ${skip} testers)` : `Inactive testers`,
                             description: `**${players.length}** most inactive testers\n${players.map(player => {
                                 const playerData = player.notRegistered ? 'Not authorized' : `Time Played: **${(player.timePlayed / 60).toFixed(2)} hours** | Games: **${player.games}**`;
                                 return `${players.indexOf(player) + 1}. <@${player.member.id}> - ${playerData}`
