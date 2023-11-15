@@ -163,6 +163,12 @@ module.exports = { // The shop, where users can by any items you created, includ
                         "description": "How many players to clean",
                         "required": true,
                     },
+                    {
+                        "type": 4,
+                        "name": "skip",
+                        "description": "How many players to skip",
+                        "required": false,
+                    }
                 ]
             }
         ],
@@ -223,6 +229,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 const guild = await Guilds.findOne({ id: interaction.guild.id });
                 const testerRoleId = guild.testing.testingRole.id;
                 const guildMembers = await interaction.guild.members.fetch();
+                const skip = interaction.options.getInteger('skip') ? interaction.options.getInteger('skip') : 0;
                 guild.testing.cleaning = [];
                 await guild.save();
 
@@ -232,7 +239,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 // Check if members exist in the database and sort them
                 let sortedTesters = await sortTestersByActivity(testersWithRole);
 
-                const playersToNotify = sortedTesters.slice(0, playersToClean);
+                const playersToNotify = sortedTesters.slice(skip, playersToClean);
                 playersToNotify.forEach(player => {
                     guild.testing.cleaning.push(player.member.id);
                 })
@@ -277,7 +284,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                             type: 'rich',
                             title: `Inactive testers`,
                             description: `**${players.length}** most inactive testers\n${players.map(player => {
-                                const playerData = player.notRegistered ? 'Not authorized' : `Time Played: **${player.timePlayed / 60} hours** | Games: **${player.games}**`;
+                                const playerData = player.notRegistered ? 'Not authorized' : `Time Played: **${(player.timePlayed / 60).toFixed(2)} hours** | Games: **${player.games}**`;
                                 return `${players.indexOf(player) + 1}. <@${player.member.id}> - ${playerData}`
 
                             }).join('\n')}`,
