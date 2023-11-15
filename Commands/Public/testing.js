@@ -163,12 +163,6 @@ module.exports = { // The shop, where users can by any items you created, includ
                         "description": "How many players to clean",
                         "required": true,
                     },
-                    {
-                        "type": 4,
-                        "name": "playtime",
-                        "description": "Less than how many minutes played",
-                        required: false,
-                    }
                 ]
             }
         ],
@@ -223,7 +217,7 @@ module.exports = { // The shop, where users can by any items you created, includ
         if(interaction.options.getSubcommand() === 'cleaning') {
 
             await cleanInactiveTesters(interaction)
-            interaction.reply({content: `Cleaning started`, ephemeral: true});
+
             async function cleanInactiveTesters(interaction) {
                 const playersToClean = interaction.options.getInteger('players');
                 const guild = await Guilds.findOne({ id: interaction.guild.id });
@@ -282,17 +276,11 @@ module.exports = { // The shop, where users can by any items you created, includ
                         {
                             type: 'rich',
                             title: `Inactive testers`,
-                            description: `**${players.length}** most inactive testers`,
-                            fields: [
-                                {
-                                    name: `Testers`,
-                                    value: players.map(player => {
-                                        const playerData = player.notRegistered ? 'Not authorized' : `Time Played: **${player.timePlayed / 60} hours** | Games: **${player.games}**`;
-                                        return `${players.indexOf(player) + 1}. <@${player.member.id}> - ${playerData}`
-                                    
-                                    }).join('\n')
-                                },
-                            ],
+                            description: `**${players.length}** most inactive testers\n${players.map(player => {
+                                const playerData = player.notRegistered ? 'Not authorized' : `Time Played: **${player.timePlayed / 60} hours** | Games: **${player.games}**`;
+                                return `${players.indexOf(player) + 1}. <@${player.member.id}> - ${playerData}`
+
+                            }).join('\n')}`,
                             color: 0x14cd33,
                         }],
                     components: [
@@ -317,6 +305,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                         }
                     ],
                 })
+                interaction.reply({content: `Cleaning started`, ephemeral: true});
             }
 
 
