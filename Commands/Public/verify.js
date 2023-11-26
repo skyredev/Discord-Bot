@@ -44,7 +44,10 @@ module.exports = { // Creates message with the link button for verification, the
                 {
                     "type": "rich",
                     "title": `Game statistics tracking & reward system`,
-                    "description": `Authorize with your Battle.net to earn rewards after games you played and track your statistics\n Click on the button below to authorize your account
+                    "description": `Once you become verified all your games from https://discord.com/channels/748898705452564580/1136090314969460797 are stored in our data base. It allows us to track activity and identify players using their BNet ID.
+                     In future we are planning to give benefits and rewards with it.\n 
+                     Authorize with your Battle.net to track your match played
+                     Click on the button below to verify via authorization your account
                     \n**Please note that if you create new Starcraft II game profile on other region you will need to reauthorize your account**\n`,
                     "color": 0x6fff00
                 }
@@ -89,10 +92,10 @@ module.exports = { // Creates message with the link button for verification, the
             "embeds": [
                 {
                     "type": "rich",
-                    "title": `Your Authorization session`,
-                    "description": `Here is your authorization session\n
-                    Please click on the button below to authorize your account\n
-                    \n**Authorization occurs on official Blizzard Entertainment website account.battle.net and is completely safe, we will not store any of your sensitive information or have access to your password or any other personal information**\n
+                    "title": `Authorization`,
+                    "description": `Here is your authorization link,\n
+                    Please click on the button below to redirect to Battle.net login page and authorize your account
+                    \n**Authorization occurs on official Blizzard Entertainment website account.battle.net and is completely safe, we will not store any of your sensitive information or have access to your password or any other personal information**
                     \n*Resurgence of the Storm is not affiliated with Blizzard Entertainment, Inc. in any way*`,
                     "color": 0x6fff00
                 }

@@ -33,6 +33,10 @@ let GuildSchema = new Schema({
                 id: String,
                 name: String,
             },
+            verificationChannel: {
+                id: String,
+                name: String,
+            },
             donatorRole: {
                 id: String,
                 name: String,

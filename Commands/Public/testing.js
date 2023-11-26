@@ -156,20 +156,11 @@ module.exports = { // The shop, where users can by any items you created, includ
                 "type": 1,
                 "name": "cleaning",
                 "description": "Clean inactive players",
-                "options": [
-                    {
-                        "type": 4,
-                        "name": "players",
-                        "description": "How many players to clean",
-                        "required": true,
-                    },
-                    {
-                        "type": 4,
-                        "name": "skip",
-                        "description": "How many players to skip",
-                        "required": false,
-                    }
-                ]
+            },
+            {
+                "type": 1,
+                "name": "unregistered",
+                "description": "Clean unregisterd players",
             }
         ],
         default_member_permissions: 8,
@@ -220,72 +211,152 @@ module.exports = { // The shop, where users can by any items you created, includ
             await guild.save();
             interaction.reply({content: `Testing role set to #${role.name}`, ephemeral: true});
         }
+        if(interaction.options.getSubcommand() === 'unregistered') {
+
+                await cleanUnregisteredTesters(interaction)
+
+                async function cleanUnregisteredTesters(interaction) {
+                    const guild = await Guilds.findOne({ id: interaction.guild.id });
+                    const testerRoleId = guild.testing.testingRole.id;
+                    const boosterRoleId = guild.verify.donatorRole.id;
+                    const guildMembers = await interaction.guild.members.fetch();
+                    guild.testing.cleaning = [];
+                    await guild.save();
+
+                    let testersWithRole = guildMembers.filter(member =>
+                        member.roles.cache.has(testerRoleId) && !member.roles.cache.has(boosterRoleId)
+                    );
+
+                    const unregisteredTesters = [];
+                    for (const tester of testersWithRole) {
+                        const playerData = await Player.findOne({ discordId: tester[0] });
+                        if (!playerData) {
+                            unregisteredTesters.push({
+                                member: tester[1].user,
+                            });
+                        }
+                    }
+
+                    unregisteredTesters.forEach(player => {
+                        guild.testing.cleaning.push(player.member.id);
+                    })
+                    await guild.save();
+
+                    // Create and send embed message
+                    await sendUnregisteredEmbed(interaction, unregisteredTesters);
+                }
+                async function sendUnregisteredEmbed(interaction, players) {
+                    await interaction.channel.send({
+                        embeds: [
+                            {
+                                type: 'rich',
+                                title:  `Unauthorized testers`,
+                                description: `**${players.length}** unauthorized testers\n${players.map(player => {
+                                    return `${players.indexOf(player) + 1}. <@${player.member.id}> (${player.member.username})`
+    
+                                }).join('\n')}`,
+                                color: 0x14cd33,
+                            }],
+                        components: [
+                            {
+                                type: 1,
+                                components: [
+                                    {
+                                        style: 4,
+                                        label: `Delete all`,
+                                        custom_id: `unauth_cleaning`,
+                                        disabled: false,
+                                        type: 2
+                                    },
+                                    {
+                                        style: 2,
+                                        label: `Warn all`,
+                                        custom_id: `unauth_warning`,
+                                        disabled: false,
+                                        type: 2
+                                    },
+                                ]
+                            }
+                        ],
+                    })
+                    interaction.reply({content: `Cleaning started`, ephemeral: true});
+            }
+
+
+        }
         if(interaction.options.getSubcommand() === 'cleaning') {
 
             await cleanInactiveTesters(interaction)
 
             async function cleanInactiveTesters(interaction) {
-                const playersToClean = interaction.options.getInteger('players');
                 const guild = await Guilds.findOne({ id: interaction.guild.id });
                 const testerRoleId = guild.testing.testingRole.id;
+                const boosterRoleId = guild.verify.donatorRole.id;
                 const guildMembers = await interaction.guild.members.fetch();
-                const skip = interaction.options.getInteger('skip') ? interaction.options.getInteger('skip') : 0;
                 guild.testing.cleaning = [];
                 await guild.save();
 
                 // Fetch members with tester role
-                const testersWithRole = guildMembers.filter(member => member.roles.cache.has(testerRoleId));
+                let testersWithRole = guildMembers.filter(member =>
+                    member.roles.cache.has(testerRoleId) && !member.roles.cache.has(boosterRoleId)
+                );
 
                 // Check if members exist in the database and sort them
                 let sortedTesters = await sortTestersByActivity(testersWithRole);
 
-                const playersToNotify = sortedTesters.slice(skip, playersToClean);
-                playersToNotify.forEach(player => {
+                sortedTesters.forEach(player => {
                     guild.testing.cleaning.push(player.member.id);
                 })
                 await guild.save();
 
                     // Create and send embed message
-                await sendEmbedMessage(interaction, playersToNotify, skip);
+                await sendEmbedMessage(interaction, sortedTesters);
                 }
 
             async function sortTestersByActivity(testers) {
-                // This function will check the database and sort the testers
-                // Pseudocode, adjust according to your database and data structure
+                const ELIGIBLE_GAMES = 2;
                 let testersWithStats = [];
                 for (const tester of testers) {
                     const playerData = await Player.findOne({ discordId: tester[0] });
                     if (playerData) {
                         testersWithStats.push({
                             member: tester[1].user,
-                            timePlayed: playerData.stats.timePlayed,
-                            games: playerData.stats.games
+                            games: playerData.games,
+                            eligibleGames: 0,
                         });
-                    } else {
-                        testersWithStats.push({ member: tester[1].user, notRegistered: true });
                     }
                 }
 
-                // Sorting logic
+                const sixtyDaysAgo = new Date();
+                sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+                const sixtyDaysAgoTimestamp = sixtyDaysAgo.getTime();
+
+                await Promise.all(testersWithStats.map(async tester => {
+                    tester.games.forEach(game => {
+                        const completedAtTimestamp = Date.parse(game.time.completedAt);
+                        if (game.players.length >= 2 && game.time.duration >= 5 && completedAtTimestamp >= sixtyDaysAgoTimestamp) {
+                            tester.eligibleGames++;
+                        }
+                    });
+                }));
+                testersWithStats = testersWithStats.filter(tester => tester.eligibleGames < ELIGIBLE_GAMES);
+
                 testersWithStats.sort((a, b) => {
-                    if (a.notRegistered) return -1;
-                    if (b.notRegistered) return 1;
-                    if (a.timePlayed !== b.timePlayed) return a.timePlayed - b.timePlayed;
-                    return a.games - b.games;
+                    return a.eligibleGames - b.eligibleGames;
                 });
 
                 return testersWithStats;
             }
 
-            async function sendEmbedMessage(interaction, players, skip) {
+            async function sendEmbedMessage(interaction, players) {
                 await interaction.channel.send({
                     embeds: [
                         {
                             type: 'rich',
-                            title: skip ? `Inactive testers (skipped ${skip} testers)` : `Inactive testers`,
+                            title:  `Inactive testers`,
                             description: `**${players.length}** most inactive testers\n${players.map(player => {
-                                const playerData = player.notRegistered ? 'Not authorized' : `Time Played: **${(player.timePlayed / 60).toFixed(2)} hours** | Games: **${player.games}**`;
-                                return `${players.indexOf(player) + 1}. <@${player.member.id}> - ${playerData}`
+                                const playerData = `Eligible games: ${player.eligibleGames}`;
+                                return `${players.indexOf(player) + 1}. <@${player.member.id}> (${player.member.username}) - ${playerData}`
 
                             }).join('\n')}`,
                             color: 0x14cd33,
@@ -570,6 +641,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             try {
                 const guild = await Guilds.findOne({ id: interaction.guild.id });
                 const wave = guild.testing.waves.find(i => i.id === id);
+                const member = await interaction.guild.members.fetch(interaction.user.id);
                 if (!wave) return interaction.reply({ content: `Testing wave not found!`, ephemeral: true });
 
                 if (wave.users.signed.players.find(i => i.discordId === interaction.user.id)) {
@@ -584,161 +656,100 @@ module.exports = { // The shop, where users can by any items you created, includ
                         discordName: interaction.user.username,
                     })
                     wave.users.signed.count++;
+                    wave.users.accepted.count++;
                     guild.testing.waves[guild.testing.waves.indexOf(wave)] = wave;
 
-                    const channel = await interaction.guild.channels.fetch(guild.testing.logChannel.id);
-                    const message = await channel.send({
-                        embeds: [
-                            {
-                                type: 'rich',
-                                title: `New testing wave sign up!`,
-                                description: `**${interaction.user.username}** signed up for **${wave.title}** <@${interaction.user.id}>`,
-                                fields: [
+                    if (guild.testing.channel.id) {
+                        let channel = await interaction.guild.channels.fetch(wave.base.channel);
+
+                        if (channel) {
+                            let message = await channel.messages.fetch(wave.base.message);
+
+                            await guild.save();
+                            await message.edit({
+                                embeds: [
                                     {
-                                        name: `Limit`,
-                                        value: wave.limit ? `${wave.users.accepted.count}/${wave.limit}` : 'No limit'
-                                    },
-                                ],
-                                color: 0x14cd33,
-                                footer: {
-                                    text: `ID: ${wave.id}`
-                                }
-                            }],
-                        components: [
-                            {
-                                type: 1,
+                                        type: 'rich',
+                                        title: wave.title,
+                                        description: wave.description,
+                                        fields: [
+                                            {
+                                                name: `Limit`,
+                                                value: wave.limit ? `${wave.users.accepted.count}/${wave.limit}` : 'No limit'
+                                            },
+                                        ],
+                                        color: wave.limit && wave.users.accepted.count >= wave.limit ? 0xcd143c : 0x14cd33,
+                                        footer: {
+                                            text: `ID: ${wave.id}`
+                                        }
+                                    }],
                                 components: [
                                     {
-                                        style: 3,
-                                        label: `Accept`,
-                                        custom_id: `accept_${wave.id}_${interaction.user.id}`,
-                                        disabled: false,
-                                        type: 2
-                                    },
+                                        type: 1,
+                                        components: [
+                                            {
+                                                style: 3,
+                                                label: wave.limit && wave.users.accepted.count >= wave.limit ? `Wave ended` : `Sign up`,
+                                                custom_id: `${wave.id}`,
+                                                disabled: wave.limit && wave.users.accepted.count >= wave.limit,
+                                                type: 2
+                                            },
+                                        ]
+                                    }
+                                ],
+                                files: wave.image ? [wave.image] : []
+                            });
+
+
+                            channel = interaction.guild.channels.cache.get(guild.testing.logChannel.id);
+                            await channel.send({
+                                embeds: [
                                     {
-                                        style: 4,
-                                        label: `Reject`,
-                                        custom_id: `reject_${wave.id}_${interaction.user.id}`,
-                                        disabled: false,
-                                        type: 2
-                                    },
-                                ]
-                            }
-                        ],
-                    })
-                    await guild.save();
-                    interaction.reply({ content: `You signed up for this testing wave!`, ephemeral: true });
-                }
-            } catch (e) {
-                console.log(e)
-            }
-        }
-        else if (id.startsWith('accept_') || id.startsWith('reject_')) {
-            try {
-                const guild = await Guilds.findOne({ id: interaction.guild.id });
-                const wave = guild.testing.waves.find(i => i.id === `testing_${id.split('_')[2]}`);
-                const member = await interaction.guild.members.fetch(id.split('_')[3]);
-                if (!wave) return interaction.reply({ content: `Testing wave not found!`, ephemeral: true });
-
-                if (wave.users.accepted.players.find(i => i.discordId === member.id)) {
-                    interaction.reply({ content: `You already accepted this user!`, ephemeral: true });
-                }
-                else if (wave.users.rejected.players.find(i => i.discordId === member.id)) {
-                    interaction.reply({ content: `You already rejected this user!`, ephemeral: true });
-                }
-                else {
-                    const type = id.split('_')[0];
-
-                    if (type === 'accept') {
-                        wave.users.accepted.players.push({
-                            discordId: member.id,
-                            discordName: member.user.username,
-                        })
-                        wave.users.accepted.count++;
-                        guild.testing.waves[guild.testing.waves.indexOf(wave)] = wave;
-
-                        await member.roles.add(guild.testing.testingRole.id);
-                        await member.send({ content: `✅ Congratulations, you have been accepted as a tester on **${interaction.guild.name}**! server!` });
-                        await guild.save();
-
-                        if (guild.testing.channel.id) {
-                            let channel = await interaction.guild.channels.fetch(wave.base.channel);
-
-                            if (channel) {
-                                let message = await channel.messages.fetch(wave.base.message);
-
-                                await message.edit({
-                                    embeds: [
-                                        {
-                                            type: 'rich',
-                                            title: wave.title,
-                                            description: wave.description,
-                                            fields: [
-                                                {
-                                                    name: `Limit`,
-                                                    value: wave.limit ? `${wave.users.accepted.count}/${wave.limit}` : 'No limit'
-                                                },
-                                            ],
-                                            color: wave.limit && wave.users.accepted.count >= wave.limit ? 0xcd143c : 0x14cd33,
-                                            footer: {
-                                                text: `ID: ${wave.id}`
-                                            }
-                                        }],
-                                    components: [
-                                        {
-                                            type: 1,
-                                            components: [
-                                                {
-                                                    style: 3,
-                                                    label: wave.limit && wave.users.accepted.count >= wave.limit ? `Wave ended` : `Sign up`,
-                                                    custom_id: `${wave.id}`,
-                                                    disabled: wave.limit && wave.users.accepted.count >= wave.limit,
-                                                    type: 2
-                                                },
-                                            ]
+                                        type: 'rich',
+                                        title: `New testing wave sign up!`,
+                                        description: `**${interaction.user.username}** signed up for **${wave.title}** <@${interaction.user.id}>`,
+                                        fields: [
+                                            {
+                                                name: `Limit`,
+                                                value: wave.limit ? `${wave.users.accepted.count}/${wave.limit}` : 'No limit'
+                                            },
+                                        ],
+                                        color: 0x14cd33,
+                                        footer: {
+                                            text: `ID: ${wave.id}`
                                         }
-                                    ],
-                                    files: wave.image ? [wave.image] : []
-                                });
-                            }
+                                    }],
+                            })
+                        }}
 
-                            interaction.reply({ content: `✅ <@${interaction.user.id}> accepted <@${member.id}> as a tester!`, ephemeral: false });
-                            setTimeout(() => {
-                                interaction.message.delete();
-                            }, "500");
+
+
+
+                        interaction.reply({ content: `You signed up for this testing wave!`, ephemeral: true });
+                        try{
+                            await member.send({ content: `✅ Congratulations, you have been accepted as a tester on **${interaction.guild.name}**! server!` });
+                        }catch (e) {
+                            console.log(e)
                         }
-                    } else if (type === 'reject') {
-                        wave.users.rejected.players.push({
-                            discordId: member.id,
-                            discordName: member.user.username,
-                        })
-                        wave.users.rejected.count++;
-                        guild.testing.waves[guild.testing.waves.indexOf(wave)] = wave;
-                        await member.send({ content: `❌ Unfortunately your application for testing on **${interaction.guild.name}** was not accepted!` });
-                        await guild.save();
-                        interaction.reply({ content: `❌ <@${interaction.user.id}> rejected <@${member.id}> from testing!`, ephemeral: false });
-                        setTimeout(() => {
-                            interaction.message.delete();
-                        }, "500");
-                    }
                 }
             } catch (e) {
                 console.log(e)
             }
         }
-        else if (id.startsWith('cleaning')) {
+        else if (id.startsWith('cleaning') || id.startsWith('unauth_cleaning')) {
             try {
                 const guild = await Guilds.findOne({ id: interaction.guild.id });
                 const testers = guild.testing.cleaning;
                 const guildMembers = await interaction.guild.members.fetch();
                 const testerRoleId = guild.testing.testingRole.id;
+                const content = id.startsWith('cleaning') ? `❌ You have been removed from testers on **${interaction.guild.name}** due to inactivity!` : `❌ You have been removed from testers on **${interaction.guild.name}** due to not being authorized!`;
 
                 for (const tester of testers) {
                     const member = guildMembers.get(tester);
                     if (member) {
                         await member.roles.remove(testerRoleId);
                         try {
-                            await member.send({ content: `❌ You have been removed from testers on **${interaction.guild.name}** due to inactivity!` });
+                            await member.send({ content: content });
                         }catch (e) {
                             console.log(e)
                         }
@@ -752,11 +763,14 @@ module.exports = { // The shop, where users can by any items you created, includ
                 console.log(e)
             }
         }
-        else if (id.startsWith('warning')){
+        else if (id.startsWith('warning') || id.startsWith('unauth_warning')){
             try {
                 const guild = await Guilds.findOne({ id: interaction.guild.id });
                 const testers = guild.testing.cleaning;
+                const interactionType = id.startsWith('warning') ? 'cleaning' : 'unauth_cleaning';
                 const testerChannelId = guild.testing.testersChannel.id;
+                const verificationChannel = interaction.guild.channels.cache.get(guild.verify.verificationChannel.id);
+                const content = id.startsWith('warning') ? `Warning! You've been inactive for quite long period. If you will not play public games, you will lose tester role.` : `Warning! Please, complete ${verificationChannel}, otherwise you will lose Tester role.`;
 
                 let channel = testerChannelId ? await interaction.guild.channels.fetch(testerChannelId) : interaction.channel;
                 if(!channel) return interaction.reply({ content: `Testers channel not found`, ephemeral: true});
@@ -770,7 +784,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                                 {
                                     style: 4,
                                     label: `Delete all`,
-                                    custom_id: `cleaning`,
+                                    custom_id: `${interactionType}`,
                                     disabled: false,
                                     type: 2
                                 },
@@ -781,7 +795,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                 })
 
                 await channel.send ({
-                    content: `${testers.map(tester => `<@${tester}>`).join(' ')} you have been warned for inactivity and will be removed from testers if your activity will not increase!`
+                    content: `${content}\n\n${testers.map(tester => `<@${tester}>`).join(' ')}`,
                     })
                 interaction.reply({ content: `✅ Warning sent!`, ephemeral: true });
 

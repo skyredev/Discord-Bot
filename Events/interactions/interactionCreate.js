@@ -31,6 +31,12 @@ module.exports = {
             else if(interaction.customId.startsWith('warning')){
                 command = client.commands.get('testing');
             }
+            else if(interaction.customId.startsWith('unauth_cleaning')){
+                command = client.commands.get('testing');
+            }
+            else if(interaction.customId.startsWith('unauth_warning')){
+                command = client.commands.get('testing');
+            }
         }
 
 
@@ -55,6 +61,12 @@ module.exports = {
                         executeButton = require(`testing`);
                     }
                     else if(interaction.customId.startsWith('warning')){
+                        executeButton = require(`testing`);
+                    }
+                    else if(interaction.customId.startsWith('unauth_cleaning')){
+                        executeButton = require(`testing`);
+                    }
+                    else if(interaction.customId.startsWith('unauth_warning')){
                         executeButton = require(`testing`);
                     }
                     return await executeButton(interaction, client, interaction.customId);

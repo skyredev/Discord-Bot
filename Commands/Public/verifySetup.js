@@ -23,6 +23,20 @@ module.exports = { // Setup for the verification
             },
             {
                 "type": 1,
+                "name": "verificationchannel",
+                "description": "Set verification channel!",
+                "options": [
+                    {
+                        "type": 7,
+                        "name": "verificationchannel",
+                        "description": "Set verification channel!",
+                        "required": true,
+                        channelTypes: [0]
+                    }
+                ]
+            },
+            {
+                "type": 1,
                 "name": "donatorrole",
                 "description": "Set donator role!",
                 "options": [
@@ -75,6 +89,15 @@ module.exports = { // Setup for the verification
      */
 
     async execute(interaction) {
+        if(interaction.options.getSubcommand() === 'verificationchannel') {
+            const channel = interaction.options.getChannel('verificationchannel');
+            const guild = await Guilds.findOne({id: interaction.guild.id});
+
+            guild.verify.verificationChannel.id = channel.id;
+            guild.verify.verificationChannel.name = channel.name;
+            await guild.save();
+            interaction.reply({content: `Verify log channel set to #${channel.name}`, ephemeral: true});
+        }
         if(interaction.options.getSubcommand() === 'logchannel') {
             const channel = interaction.options.getChannel('logchannel');
             const guild = await Guilds.findOne({id: interaction.guild.id});
