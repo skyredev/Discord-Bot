@@ -5,7 +5,7 @@ const {requestGameData} = require("../../Services/dataBaseServices");
 
 module.exports = { // Basic ping command - disabled
     name: 'test',
-    disabled: false,
+    disabled: true,
     data: new SlashCommandBuilder()
         .setName('test')
         .setDescription('Pong!')
