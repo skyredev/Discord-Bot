@@ -32,7 +32,7 @@ module.exports = { // Creates message with the link button for verification, the
                     "components": [
                         {
                             "style": 3,
-                            "label": `Join game tracking`,
+                            "label": `VERIFY`,
                             customId: `bnetauth`,
                             "disabled": false,
                             "type": 2

@@ -44,7 +44,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     {
                         "type": 3,
                         "name": "id",
-                        "description": "Item ID, must be unique",
+                        "description": "Item ID, must be unique (ID of the item will always have prefix shop_)",
                         "required": true,
                     },
                     {
@@ -62,7 +62,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     {
                         "type": 5,
                         "name": "donator",
-                        "description": "Required donator level to buy this item",
+                        "description": "Donator required to buy this item",
                         "required": true,
                     },
                     {
@@ -81,7 +81,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     {
                         "type": 3,
                         "name": "id",
-                        "description": "Item of Item",
+                        "description": "ID of Item (with prefix shop_)",
                         "required": true,
                     },
                     {
@@ -102,7 +102,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     {
                         "type": 5,
                         "name": "donator",
-                        "description": "Required donator level to buy this item",
+                        "description": "Donator required to buy this item",
                     },
                     {
                         "type": 11,

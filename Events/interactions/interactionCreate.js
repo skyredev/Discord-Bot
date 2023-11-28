@@ -17,25 +17,25 @@ module.exports = {
                 command = client.commands.get('shop');
             }
             else if(interaction.customId.startsWith('testing_')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
             else if(interaction.customId.startsWith('accept_')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
             else if(interaction.customId.startsWith('reject_')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
             else if(interaction.customId.startsWith('cleaning')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
             else if(interaction.customId.startsWith('warning')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
             else if(interaction.customId.startsWith('unauth_cleaning')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
             else if(interaction.customId.startsWith('unauth_warning')){
-                command = client.commands.get('testing');
+                command = client.commands.get('tester');
             }
         }
 
@@ -49,25 +49,25 @@ module.exports = {
                         executeButton = require(`shop`);
                     }
                     else if(interaction.customId.startsWith('testing_')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     else if(interaction.customId.startsWith('accept_')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     else if(interaction.customId.startsWith('reject_')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     else if(interaction.customId.startsWith('cleaning')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     else if(interaction.customId.startsWith('warning')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     else if(interaction.customId.startsWith('unauth_cleaning')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     else if(interaction.customId.startsWith('unauth_warning')){
-                        executeButton = require(`testing`);
+                        executeButton = require(`tester`);
                     }
                     return await executeButton(interaction, client, interaction.customId);
                 }else {

@@ -5,15 +5,15 @@ const Guilds = require('../../Models/Guilds');
 const Player = require('../../Models/Player');
 
 module.exports = { // The shop, where users can by any items you created, includes channel, items setup. Uses Discord Forum and threads to create shop and display items
-    name: 'testing',
+    name: 'tester',
     raw: {
-        name: 'testing',
+        name: 'tester',
         description: 'Testing waves management',
         options: [
             {
                 "type": 1,
                 "name": "channel",
-                "description": "Set testing channel",
+                "description": "Set testing channel (a channel where testing waves will be posted)",
                 "options": [
                     {
                         "type": 7,
@@ -27,12 +27,12 @@ module.exports = { // The shop, where users can by any items you created, includ
             {
                 "type": 1,
                 "name": "create",
-                "description": "Create a testing wave",
+                "description": "Create a new testing wave",
                 "options": [
                     {
                         "type": 3,
                         "name": "id",
-                        "description": "Wave ID",
+                        "description": "Wave ID, must be unique (ID of the wave will always have prefix testing_)",
                         "required": true,
                     },
                     {
@@ -56,7 +56,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     {
                         "type": 4,
                         "name": "limit",
-                        "description": "How many users can participate (leave empty if no limit)",
+                        "description": "How many users can be accepted (leave empty if no limit)",
                         "required": false,
                     },
                 ],
@@ -69,7 +69,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     {
                         "type": 3,
                         "name": "id",
-                        "description": "Wave ID",
+                        "description": "Wave ID (with prefix testing_)",
                         "required": true,
                     },
                     {
@@ -101,7 +101,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             {
                 "type": 1,
                 "name": "end",
-                "description": "End a testing wave",
+                "description": "End a testing wave (Closes testing wave immediately, message remains but no one can longer sign up)",
                 "options": [
                     {
                         "type": 3,
@@ -114,7 +114,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             {
                 "type": 1,
                 "name": "testingrole",
-                "description": "Set testing role!",
+                "description": "Set tester role",
                 "options": [
                     {
                         "type": 8,
@@ -127,7 +127,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             {
                 "type": 1,
                 "name": "logchannel",
-                "description": "Set log channel",
+                "description": "Set log channel (new sign ups will be posted here)",
                 "options": [
                     {
                         "type": 7,
@@ -141,7 +141,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             {
                 "type": 1,
                 "name": "testerschannel",
-                "description": "Set testers channel",
+                "description": "Set testers channel (channel where warnings will be posted)",
                 "options": [
                     {
                         "type": 7,
@@ -159,7 +159,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             },
             {
                 "type": 1,
-                "name": "unregistered",
+                "name": "unverified",
                 "description": "Clean unregisterd players",
             }
         ],
@@ -211,7 +211,7 @@ module.exports = { // The shop, where users can by any items you created, includ
             await guild.save();
             interaction.reply({content: `Testing role set to #${role.name}`, ephemeral: true});
         }
-        if(interaction.options.getSubcommand() === 'unregistered') {
+        if(interaction.options.getSubcommand() === 'unverified') {
 
                 await cleanUnregisteredTesters(interaction)
 
@@ -250,8 +250,8 @@ module.exports = { // The shop, where users can by any items you created, includ
                         embeds: [
                             {
                                 type: 'rich',
-                                title:  `Unauthorized testers`,
-                                description: `**${players.length}** unauthorized testers\n${players.map(player => {
+                                title:  `Unverified testers`,
+                                description: `**${players.length}** unverified testers\n${players.map(player => {
                                     return `${players.indexOf(player) + 1}. <@${player.member.id}> (${player.member.username})`
     
                                 }).join('\n')}`,
