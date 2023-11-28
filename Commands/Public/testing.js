@@ -148,7 +148,6 @@ module.exports = { // The shop, where users can by any items you created, includ
                         "name": "testerschannel",
                         "description": "Choose a channel",
                         "required": true,
-                        channelTypes: [0]
                     }
                 ]
             },
