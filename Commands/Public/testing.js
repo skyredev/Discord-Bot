@@ -20,7 +20,6 @@ module.exports = { // The shop, where users can by any items you created, includ
                         "name": "channel",
                         "description": "Choose a channel",
                         "required": true,
-                        channelTypes: [0]
                     }
                 ]
             },
@@ -223,7 +222,7 @@ module.exports = { // The shop, where users can by any items you created, includ
                     await guild.save();
 
                     let testersWithRole = guildMembers.filter(member =>
-                        member.roles.cache.has(testerRoleId) && !member.roles.cache.has(boosterRoleId)
+                        member.roles.cache.has(testerRoleId)
                     );
 
                     const unregisteredTesters = [];
