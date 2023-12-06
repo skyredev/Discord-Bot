@@ -720,10 +720,8 @@ module.exports = { // The shop, where users can by any items you created, includ
                             })
                         }}
 
-
-
-
                         interaction.reply({ content: `You signed up for this testing wave!`, ephemeral: true });
+                        await member.roles.add(guild.testing.testingRole.id);
                         try{
                             await member.send({ content: `✅ Congratulations, you have been accepted as a tester on **${interaction.guild.name}**! server!` });
                         }catch (e) {
