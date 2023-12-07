@@ -643,13 +643,15 @@ module.exports = { // The shop, where users can by any items you created, includ
                 const isTester = member.roles.cache.has(guild.testing.testingRole.id);
                 const isBooster = member.roles.cache.has(guild.verify.donatorRole.id);
                 const isAuthorized = await Player.findOne({ discordId: interaction.user.id });
+                const verificationChannel = interaction.guild.channels.cache.get(guild.verify.verificationChannel.id);
+
                 if (!wave) return interaction.reply({ content: `Testing wave not found!`, ephemeral: true });
 
                 if (isTester || isBooster) {
                     interaction.reply({ content: `You are already a tester!`, ephemeral: true });
                 }
                 else if (!isAuthorized) {
-                    interaction.reply({ content: `You are not authorized!`, ephemeral: true });
+                    interaction.reply({ content: `You are not verified! Please, complete ${verificationChannel}`, ephemeral: true });
                 }
                 else if (wave.users.signed.players.find(i => i.discordId === interaction.user.id)) {
                     interaction.reply({ content: `You already signed up for this testing wave!`, ephemeral: true });
