@@ -82,15 +82,7 @@ function init(client) {
     });
 
 
-    const limiter = rateLimit({
-        windowMs: 10 * 60 * 1000, // 10 minutes
-        max: 100, // limit each IP to 100 requests per windowMs
-        message: "Too many requests from this IP, please try again after 15 minutes."
-    });
 
-
-
-    app.use(limiter);
 /*    app.get('/ping', asyncMiddleware (async (req, res) => {
         res.send('pong')
         const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
