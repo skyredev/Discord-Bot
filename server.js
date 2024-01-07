@@ -17,14 +17,52 @@ const auth = new google.auth.GoogleAuth({
 });
 
 
-const FOLDER_ID = '120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt'
+const FOLDER_IDS = ['120ZQ98GRY-gnrC7bz8YdmKWLIvNZkuXt', '1Vt-RIGuQoQx_zZivHaC753dACZYGeovG']
 const FOLDER_PATCHER = '1aFyXPlDKqp7Zo6Lnn9VxNVOxFE9mOkLI';
 const version = require('./package.json').version;
+let currentFolder = null;
 function driveInit() {
     return google.drive({ version: 'v3', auth});
 }
+async function getAvailableFolder() {
+    for (const folderId of FOLDER_IDS) {
+        if (await isFolderAvailable(folderId)) {
+            return folderId;
+        }
+    }
+    return null;
+}
+async function isFolderAvailable(folderId) {
+    async function fetchFolder(folderId) {
+        const response = await driveInit().files.list({
+            q: `'${folderId}' in parents and trashed=false`,
+            fields: 'files(id, name, mimeType, size, md5Checksum)',
+        });
+        return response.data.files;
+    }
+    try {
+        const releaseFolder = await fetchFolder(folderId);
+        const insideFolder = await fetchFolder(releaseFolder[0].id);
+        const filesList = await fetchFolder(insideFolder[0].id);
 
+        const file = filesList[0];
+        const url = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+        await axios.head(url, {
+            headers: { 'Authorization': 'Bearer ' + accessToken }
+        });
 
+        console.log(`Folder ${folderId} is available`);
+        return true;
+    } catch (err) {
+        if (err.response && err.response.status === 403) {
+            console.error(`Folder ${folderId} is temporary blocked by google`, err.message);
+            return false;
+        } else {
+            console.error('Unknown error', err.message);
+            throw err;
+        }
+    }
+}
 async function getFolder(folderId, filesPackage, currentPath = '',  ) {
     try {
         const response = await driveInit().files.list({
@@ -117,12 +155,20 @@ function init(client) {
     }))
     app.get('/files', asyncMiddleware (async (req, res) => {
         try {
+
+            if (!currentFolder || !(await isFolderAvailable(currentFolder))) {
+                currentFolder = await getAvailableFolder();
+            }
+            if (!currentFolder) {
+                return res.json(null);
+            }
+
             const result = [];
 
             const gDrive = driveInit();
 
             const response  = await gDrive.files.list({
-                q: `'${FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                q: `'${currentFolder}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
                 fields: 'files(id, name)',
             });
 
